@@ -1,0 +1,7 @@
+LIBRARY main_gsfchirmes
+   EXPORTS
+       init_camera
+       cameraSpamAvg
+       camera_image
+       main
+       
