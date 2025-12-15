@@ -79,15 +79,44 @@ class _FILEsystemPopUp(QDialog):
         layout = QVBoxLayout()
         self.label = QLabel("CHOOSE COOLDOWN FILE OR CREATE NEW\n============================================", self)
         self.activeCooldownLabel = QLabel(f"THE ACTIVE COOLDOWN FILE IS FROM: \n {self._FILEmanager("load")}")
+        self.useActiveButton = QPushButton("USE ACTIVE")
+        self.newButton = QPushButton("NEW COOLDOWN")
         
+        
+        self.useActiveButton.setFont(QFont("Arial",10))
+        self.useActiveButton.setFixedSize(250,50)
+        self.useActiveButton.clicked.connect(self._load_and_close)
+
+        self.newButton.setFont(QFont("Arial",10))
+        self.newButton.setFixedSize(250,50)
+        self.newButton.clicked.connect(self._create_and_close)
+        #self.periph_connect_button.setStyleSheet("background-color: red")
+       
+
+        hButtonLay = QHBoxLayout()
+        hButtonLay.addWidget(self.useActiveButton)
+        hButtonLay.addWidget(self.newButton)
+        
+
         layout.addWidget(self.label)
         layout.addWidget(self.activeCooldownLabel)
+        layout.addLayout(hButtonLay)
         #layout.addWidget(self.label2)
         
         self.setLayout(layout)
         # Optional: set a specific size
-        self.resize(500, 500)
+        self.resize(500, 180)
 
+    def _create_and_close(self):
+        self._FILEmanager("create")
+        self.close()
+    def _load_and_close(self):
+        self._FILEmanager("load")
+        self.close()
+
+    def checkFolder(self):
+        return self.testID
+    
     def _FILEmanager(self, action):
         self.USER = os.environ.get("USERNAME")
         """Use this function for any of the file handeling for this software, all actions can go thru this"""
@@ -138,18 +167,19 @@ class Window(QTabWidget):
         self.cooldownDIR = False
         self.setWindowTitle("CYCLOPS - VIPA CONTROL PANEL")
         self.setFixedSize(1500,1500)
-        self.voltage = 11.935
+        self.voltage = 11.975
         self.connected = False 
 
         self.show_popup()
-
+        self.testID = self.popup_dialog.checkFolder()
+        print(self.testID)
         try:
             self.get_manual_out = create_manual_output_interpolator(".\\manual_out_temps.csv")
         except ValueError:
             self.get_manual_out = 0
         ##file management
-        self.testID = f"CYCLOPS_RUN_{dt.now().strftime("%Y_%m_%d_%H_%M")}"
-        self.testFolder = os.mkdir(f"CYCLOPS_RUN_{dt.now().strftime("%Y_%m_%d_%H_%M")}")
+        #self.testID = f"CYCLOPS_RUN_{dt.now().strftime("%Y_%m_%d_%H_%M")}"
+        self.testFolder = os.mkdir(self.testID)
         self.envDataFilePath = f".\\{self.testID}\\env_data_run_{dt.now().strftime("%Y_%m_%d_%H_%M")}.csv"
         self.recording = False
 
