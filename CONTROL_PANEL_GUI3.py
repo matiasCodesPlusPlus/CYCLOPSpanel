@@ -120,7 +120,7 @@ class _FILEsystemPopUp(QDialog):
     def _FILEmanager(self, action):
         self.USER = os.environ.get("USERNAME")
         """Use this function for any of the file handeling for this software, all actions can go thru this"""
-        self.DATA_PIPE = "C:\\Users\\{self.USER}\\Desktop\\CYCLOPS_DATA\\COOLDOWNS"
+        self.DATA_PIPE = f"C:\\Users\\{self.USER}\\Desktop\\CYCLOPS_DATA\\COOLDOWNS"
 
         if action == "create":
             """create a cooldown file - TODO: map this to correct buttons"""
@@ -172,14 +172,15 @@ class Window(QTabWidget):
 
         self.show_popup()
         self.testID = self.popup_dialog.checkFolder()
-        print(self.testID)
+        
         try:
             self.get_manual_out = create_manual_output_interpolator(".\\manual_out_temps.csv")
         except ValueError:
             self.get_manual_out = 0
         ##file management
         #self.testID = f"CYCLOPS_RUN_{dt.now().strftime("%Y_%m_%d_%H_%M")}"
-        self.testFolder = os.mkdir(self.testID)
+        if not os.path.exists(self.testID):
+            self.testFolder = os.mkdir(self.testID)
         self.envDataFilePath = f".\\{self.testID}\\env_data_run_{dt.now().strftime("%Y_%m_%d_%H_%M")}.csv"
         self.recording = False
 
