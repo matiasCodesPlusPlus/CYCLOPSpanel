@@ -41,6 +41,7 @@ import K2220G as K2220G
 
 #GUI Package imports
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtWidgets import QStatusBar
@@ -70,15 +71,78 @@ import pyqtgraph as pg
 import time
 from include.MoutInterpolator import create_manual_output_interpolator
 
+class _FILEsystemPopUp(QDialog):
+
+    def __init__(self, parent = None):
+        super().__init__(parent)
+        self.setWindowTitle(" CYCLOPS FILE SYSTEM")
+        layout = QVBoxLayout()
+        self.label = QLabel("CHOOSE COOLDOWN FILE OR CREATE NEW\n============================================", self)
+        self.activeCooldownLabel = QLabel(f"THE ACTIVE COOLDOWN FILE IS FROM: \n {self._FILEmanager("load")}")
+        
+        layout.addWidget(self.label)
+        layout.addWidget(self.activeCooldownLabel)
+        #layout.addWidget(self.label2)
+        
+        self.setLayout(layout)
+        # Optional: set a specific size
+        self.resize(500, 500)
+
+    def _FILEmanager(self, action):
+        self.USER = os.environ.get("USERNAME")
+        """Use this function for any of the file handeling for this software, all actions can go thru this"""
+        self.DATA_PIPE = "C:\\Users\\{self.USER}\\Desktop\\CYCLOPS_DATA\\COOLDOWNS"
+
+        if action == "create":
+            """create a cooldown file - TODO: map this to correct buttons"""
+            self.testID = f"{self.DATA_PIPE}\\CYCLOPS_RUN_{dt.now().strftime("%Y_%m_%d")}"
+            with open(".\\localMEM\\local_cooldown.txt", "w") as cooldownFile:
+                cooldownFile.writelines(self.testID)
+        elif action == "load":
+            """loads cooldown file from memory, this will be stored in //.localMEM"""
+            with open(".\\localMEM\\local_cooldown.txt", "r") as cooldownFile:
+                self.testID = cooldownFile.readline()
+                cooldownFile.close()
+            return self.testID
+        elif action == "create-sweep":
+            self.sweepID = f"{self.testID}\\_SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
+
 class Window(QTabWidget):
     """Main Window Object"""
+    def show_popup(self):
+        # Pass 'self' (the main window) as the parent
+        self.popup_dialog = _FILEsystemPopUp(self)
+        # Use .exec() for a modal dialog (blocks main window input)
+        self.popup_dialog.exec() 
+        
+    def _FILEmanager(self, action):
+        self.USER = os.environ.get("USERNAME")
+        """Use this function for any of the file handeling for this software, all actions can go thru this"""
+        self.DATA_PIPE = "C:\\Users\\{self.USER}\\Desktop\\CYCLOPS_DATA\\COOLDOWNS"
+
+        if action == "create":
+            """create a cooldown file - TODO: map this to correct buttons"""
+            self.testID = f"{self.DATA_PIPE}\\CYCLOPS_RUN_{dt.now().strftime("%Y_%m_%d")}"
+            with open(".\\localMEM\\local_cooldown.txt", "w") as cooldownFile:
+                cooldownFile.writelines(self.testID)
+        elif action == "load":
+            """loads cooldown file from memory, this will be stored in //.localMEM"""
+            with open(".\\localMEM\\local_cooldown.txt", "r") as cooldownFile:
+                self.testID = cooldownFile.readline()
+                cooldownFile.close()
+        elif action == "create-sweep":
+            self.sweepID = f"{self.testID}\\_SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
+
     def __init__(self, parent = None):
         super().__init__(parent)
         self.cooldownDIR = False
         self.setWindowTitle("CYCLOPS - VIPA CONTROL PANEL")
-        self.setFixedSize(1250,1000)
+        self.setFixedSize(1500,1500)
         self.voltage = 11.935
         self.connected = False 
+
+        self.show_popup()
+
         try:
             self.get_manual_out = create_manual_output_interpolator(".\\manual_out_temps.csv")
         except ValueError:
