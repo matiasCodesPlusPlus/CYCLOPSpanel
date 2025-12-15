@@ -1,4 +1,6 @@
-from labjack import ljm
+import os
+if (os.environ.get("USERNAME") == "gsfchirmes"):
+    from labjack import ljm
 
 class pressureSensor():
     def __init__(self):
