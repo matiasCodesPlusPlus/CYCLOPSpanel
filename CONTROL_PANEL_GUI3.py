@@ -129,9 +129,12 @@ class _FILEsystemPopUp(QDialog):
                 cooldownFile.writelines(self.testID)
         elif action == "load":
             """loads cooldown file from memory, this will be stored in //.localMEM"""
-            with open(".\\localMEM\\local_cooldown.txt", "r") as cooldownFile:
-                self.testID = cooldownFile.readline()
-                cooldownFile.close()
+            if os.environ.get("USERNAME") == "gsfchirmes":
+                with open(".\\localMEM\\local_cooldown.txt", "r") as cooldownFile:
+                    self.testID = cooldownFile.readline()
+                    cooldownFile.close()
+            else:
+                self.testID = "C:\\Users\\matia\\Desktop\\TEST_BLANK_DIR" #init a test empty dir
             return self.testID
         elif action == "create-sweep":
             self.sweepID = f"{self.testID}\\_SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
@@ -142,7 +145,7 @@ class Window(QTabWidget):
         super().__init__(parent)
         self.cooldownDIR = False
         self.setWindowTitle("CYCLOPS - VIPA CONTROL PANEL")
-        self.setFixedSize(1500,1500)
+        self.setFixedSize(2000,1500)
         self.voltage = 11.975
         self.connected = False 
 
@@ -234,6 +237,7 @@ class Window(QTabWidget):
             -> OUTPUT LINE INTERFACE"""
         #CAMERA CONNECTION----------------------------------------------------------------
         top_row = QHBoxLayout()
+        self.controlBarWidth = 400
 
         #peripherals connection
         self.periph_connect_button = QPushButton("CONNECT PERIPHERALS")
@@ -245,7 +249,7 @@ class Window(QTabWidget):
         #start data record button
         self.data_button = QPushButton("START DATA RECORD")
         self.data_button.setFont(QFont("Arial",10))
-        self.data_button.setFixedSize(250,40)
+        self.data_button.setFixedSize(300,40)
         self.data_button.setStyleSheet("background-color: light blue")
         self.data_button.clicked.connect(self._begin_data)
         #motor control buttons
@@ -258,7 +262,7 @@ class Window(QTabWidget):
         #motor control buttons
         self.motor_sweep_button = QPushButton("SWEEP STAGE")
         self.motor_sweep_button.setFont(QFont("Arial",10))
-        self.motor_sweep_button.setFixedSize(200,40)
+        self.motor_sweep_button.setFixedSize(300,40)
         self.motor_sweep_button.setStyleSheet("background-color: white") #TODO: change colors when motor needs to be homed, NRT100 code has stuff for this
         self.motor_sweep_button.clicked.connect(self.on_clicked_motor_sweep)
 
@@ -313,7 +317,7 @@ class Window(QTabWidget):
         self.tempWidget.setBackground('w')
         self.tempWidget.setLabel('bottom', 'Time', units='Min', **{'font-size':'12pt'})
         self.tempWidget.getAxis('bottom').setPen(pen)
-        self.tempWidget.setLabel('left', 'Temp.', units='K', color='#c4380d', **{'font-size':'12pt'})
+        self.tempWidget.setLabel('left', 'Temp.', units='K', color="#d14116", **{'font-size':'12pt'})
         self.tempWidget.getAxis('left').setPen(pen1)
         self.tempWidget.setStyleSheet("border: 1px solid black;")
 
@@ -346,7 +350,7 @@ class Window(QTabWidget):
         #QCL ON/OFF
         self.QCL_controlButton = QPushButton()
         self.QCL_controlButton.setText("QCL (OFF)")
-        self.QCL_controlButton.setFixedSize(300,40)
+        self.QCL_controlButton.setFixedSize(int(1.5*self.controlBarWidth),40)
         self.QCL_controlButton.setStyleSheet("background-color: red")
         self.QCL_controlButton.setFont(QFont("Arial", 20))
         self.QCL_controlButton.clicked.connect(self._voltage_onOff)
@@ -362,20 +366,20 @@ class Window(QTabWidget):
         #voltage set control label
         self.vset_label = QLabel()
         self.vset_label.setText("SET QCL VOLTAGE")
-        self.vset_label.setFixedSize(300,40)
+        self.vset_label.setFixedSize(self.controlBarWidth,40)
         self.vset_label.setStyleSheet("background-color: white")
         self.vset_label.setFont(QFont("Arial",12))
         controlCenter.addWidget(self.vset_label)
         #QCL Voltage Set
         self.QCL_voltSet = QTextEdit()
-        self.QCL_voltSet.setFixedSize(200,40)
+        self.QCL_voltSet.setFixedSize(int(self.controlBarWidth/2),40)
         self.QCL_voltSet.setFont(QFont("Arial", 12))
         QCL_control.addWidget(self.QCL_voltSet, alignment = Qt.AlignLeft)
 
         self.setVoltage = QPushButton()
         self.setVoltage.setText("SET VOLTAGE")
         self.setVoltage.setFont(QFont("Arial",6))
-        self.setVoltage.setFixedSize(100,40)
+        self.setVoltage.setFixedSize(int(self.controlBarWidth),40)
         self.setVoltage.setStyleSheet("background-color: white")
         self.setVoltage.clicked.connect(self._grab_voltage)
         QCL_control.addWidget(self.setVoltage, alignment = Qt.AlignRight)
@@ -390,8 +394,8 @@ class Window(QTabWidget):
         MX_subControls = QHBoxLayout()
         #camera control label
         self.cam_label = QLabel()
-        self.cam_label.setText("MICROXCAM 394-I CONTROLS")
-        self.cam_label.setFixedSize(300,40)
+        self.cam_label.setText("MICROXCAM 384-I CONTROLS")
+        self.cam_label.setFixedSize(self.controlBarWidth,40)
         self.cam_label.setStyleSheet("background-color: white")
         self.cam_label.setFont(QFont("Arial",12))
         controlCenter.addWidget(self.cam_label)
@@ -400,13 +404,13 @@ class Window(QTabWidget):
         self.MXsimple = QPushButton()
         self.MXsimple.setText("SINGLE IMAGE")
         self.MXsimple.setFont(QFont("Arial",6))
-        self.MXsimple.setFixedSize(150,40)
+        self.MXsimple.setFixedSize(int(self.controlBarWidth*.5),40)
         MX_subControls.addWidget(self.MXsimple)
         #flashed image
         self.MXflashed = QPushButton()
         self.MXflashed.setText("FLASHED IMAGE")
         self.MXflashed.setFont(QFont("Arial", 6))
-        self.MXsimple.setFixedSize(150,40)
+        self.MXsimple.setFixedSize(int(self.controlBarWidth*.5),40)
         MX_subControls.addWidget(self.MXflashed)
 
         controlCenter.addLayout(MX_subControls)
@@ -421,19 +425,19 @@ class Window(QTabWidget):
         #savefile label
         self.sv_label = QLabel()
         self.sv_label.setText("DIRECTORY TO SAVE IMAGES:")
-        self.sv_label.setFixedSize(300,40)
+        self.sv_label.setFixedSize(self.controlBarWidth,40)
         self.sv_label.setStyleSheet("background-color: white")
         self.sv_label.setFont(QFont("Arial",12))
         controlCenter.addWidget(self.sv_label)
         #save to line
         saveto_lay = QVBoxLayout()
         self.fileLocation = QTextEdit()
-        self.fileLocation.setFixedSize(300,20)
+        self.fileLocation.setFixedSize(self.controlBarWidth,20)
         self.fileLocation.setFont(QFont("Arial",6))
         saveto_lay.addWidget(self.fileLocation, alignment = Qt.AlignTop)
         
         self.exploreButton = QPushButton()
-        self.exploreButton.setFixedSize(300,20)
+        self.exploreButton.setFixedSize(self.controlBarWidth,20)
         self.exploreButton.setFont(QFont("Arial", 6))
         self.exploreButton.setText("REVEAL LOCATION IN FILE EXPLORER")
         self.exploreButton.clicked.connect(self.on_clicked_file_explore)
@@ -449,7 +453,7 @@ class Window(QTabWidget):
         #params label
         self.sw_label = QLabel()
         self.sw_label.setText("SWEEP CONTROL PARAMS:")
-        self.sw_label.setFixedSize(300,40)
+        self.sw_label.setFixedSize(self.controlBarWidth,40)
         self.sw_label.setStyleSheet("background-color: white")
         self.sw_label.setFont(QFont("Arial",12))
         controlCenter.addWidget(self.sw_label)
@@ -461,26 +465,26 @@ class Window(QTabWidget):
         sweepControls4 = QHBoxLayout()
         #sweep distance intervals
         self.set_sweep_dx = QTextEdit()
-        self.set_sweep_dx.setFixedSize(200,40)
+        self.set_sweep_dx.setFixedSize(int(self.controlBarWidth),75)
         self.set_sweep_dx.setFont(QFont("Arial", 20))
 
         self.set_sweep_dx_button = QPushButton()
-        self.set_sweep_dx_button.setFixedSize(100,40)
+        self.set_sweep_dx_button.setFixedSize(int(.5*self.controlBarWidth),75)
         self.set_sweep_dx_button.setText("SET dx (mm)")
         self.set_sweep_dx_button.setStyleSheet("background-color: white")
         self.set_sweep_dx_button.clicked.connect(self._grab_dx)
 
         #sweep bounds
         self.set_sweep_lowBound  = QTextEdit()
-        self.set_sweep_lowBound.setFixedSize(100,40)
+        self.set_sweep_lowBound.setFixedSize(int(.5*self.controlBarWidth),75)
         self.set_sweep_lowBound.setFont(QFont("Arial", 20))
 
         self.set_sweep_hiBound  = QTextEdit()
-        self.set_sweep_hiBound.setFixedSize(100,40)
+        self.set_sweep_hiBound.setFixedSize(int(.5*self.controlBarWidth),75)
         self.set_sweep_hiBound.setFont(QFont("Arial", 20))
 
         self.set_sweep_bounds = QPushButton()
-        self.set_sweep_bounds.setFixedSize(100,40)
+        self.set_sweep_bounds.setFixedSize(int(.5*self.controlBarWidth),75)
         self.set_sweep_bounds.setText("SET BOUNDS")
         self.set_sweep_bounds.setStyleSheet("background-color: white")
         self.set_sweep_bounds.clicked.connect(self._grab_bounds)
@@ -490,32 +494,32 @@ class Window(QTabWidget):
         sweepControls4.addWidget(self.set_sweep_bounds)
         #frames input to camera
         self.set_frames = QTextEdit()
-        self.set_frames.setFixedSize(200,40)
+        self.set_frames.setFixedSize(int(self.controlBarWidth),75)
         self.set_frames.setFont(QFont("Arial", 20))
 
         self.set_frames_button = QPushButton()
-        self.set_frames_button.setFixedSize(100,40)
+        self.set_frames_button.setFixedSize(int(.5*self.controlBarWidth),75)
         self.set_frames_button.setText("SET Framecount")
         self.set_frames_button.setStyleSheet("background-color: white")
         self.set_frames_button.clicked.connect(self._grab_framecount)
 
         #qcl time offset
-        self.qcl_timeOffset = QTextEdit()
-        self.qcl_timeOffset.setFixedSize(200,40)
-        self.qcl_timeOffset.setFont(QFont("Arial", 20))
+        # self.qcl_timeOffset = QTextEdit()
+        # self.qcl_timeOffset.setFixedSize(200,40)
+        # self.qcl_timeOffset.setFont(QFont("Arial", 20))
 
-        self.qcl_timeOffset_button = QPushButton()
-        self.qcl_timeOffset_button.setFixedSize(100,40)
-        self.qcl_timeOffset_button.setText("SET QCL t Offset")
-        self.qcl_timeOffset_button.setStyleSheet("background-color: white")
-        self.qcl_timeOffset_button.clicked.connect(self._grab_qclTimeOffset)
+        # self.qcl_timeOffset_button = QPushButton()
+        # self.qcl_timeOffset_button.setFixedSize(100,40)
+        # self.qcl_timeOffset_button.setText("SET QCL t Offset")
+        # self.qcl_timeOffset_button.setStyleSheet("background-color: white")
+        # self.qcl_timeOffset_button.clicked.connect(self._grab_qclTimeOffset)
         
         sweepControls1.addWidget(self.set_sweep_dx)
         sweepControls1.addWidget(self.set_sweep_dx_button)
         sweepControls2.addWidget(self.set_frames)
         sweepControls2.addWidget(self.set_frames_button)
-        sweepControls3.addWidget(self.qcl_timeOffset)
-        sweepControls3.addWidget(self.qcl_timeOffset_button)
+        #sweepControls3.addWidget(self.qcl_timeOffset)
+        #sweepControls3.addWidget(self.qcl_timeOffset_button)
         sweepControls.addLayout(sweepControls1)
         sweepControls.addLayout(sweepControls4)
         sweepControls.addLayout(sweepControls2)
@@ -602,7 +606,7 @@ class Window(QTabWidget):
         
         #PWOUT
         self.ptarget_display = QLabel("Set Power (W)")
-        self.ptarget_display.setFixedSize(130,30)
+        self.ptarget_display.setFixedSize(200,30)
         self.ptarget_display.setFont(QFont("Arial",12))
         self.ptarget_display.setAlignment(QtCore.Qt.AlignCenter) 
         
@@ -616,7 +620,7 @@ class Window(QTabWidget):
         
         #T Target
         self.ttarget_display = QLabel("Set Temp. (K)")
-        self.ttarget_display.setFixedSize(120,30)
+        self.ttarget_display.setFixedSize(200,30)
         self.ttarget_display.setFont(QFont("Arial",12))
         self.ttarget_display.setAlignment(QtCore.Qt.AlignCenter) 
         
@@ -692,7 +696,7 @@ class Window(QTabWidget):
         next_row = QHBoxLayout()
         #temp display
         self.temp_display4K = QLabel()#QLCDNumber()
-        self.temp_display4K.setFixedSize(250,50)
+        self.temp_display4K.setFixedSize(400,50)
         self.temp_display_font = self.temp_display4K.font()
         self.temp_display_font.setPointSize(20)
         self.temp_display4K.setFont(self.temp_display_font)
@@ -702,7 +706,7 @@ class Window(QTabWidget):
         self.temp_display4K.setText("T<sub>4K1</sub> = %.2fK"%self.current_T4K1)
         #rej temp display
         self.temp_display50K = QLabel()#QLCDNumber()
-        self.temp_display50K.setFixedSize(250,50)
+        self.temp_display50K.setFixedSize(400,50)
         self.rej_display_font = self.temp_display50K.font()
         self.rej_display_font.setPointSize(20)
         self.temp_display50K.setFont(self.rej_display_font)
@@ -712,7 +716,7 @@ class Window(QTabWidget):
         self.temp_display50K.setText("T<sub>50K1</sub> = %.2fK"%self.rej_temp)
         #pow display
         self.pow_display = QLabel()#QLCDNumber()
-        self.pow_display.setFixedSize(250,50)
+        self.pow_display.setFixedSize(400,50)
         self.pow_display_font = self.pow_display.font()
         self.pow_display_font.setPointSize(20)
         self.pow_display.setFont(self.pow_display_font)
@@ -722,7 +726,7 @@ class Window(QTabWidget):
         self.pow_display.setText("P<sub>HEAT_QCL</sub> = %.2fW"%self.current_pow)
         #heater 2 display
         self.pow_display_4K = QLabel()
-        self.pow_display_4K.setFixedSize(250,50)
+        self.pow_display_4K.setFixedSize(400,50)
         self.pow_display_font = self.pow_display_4K.font()
         self.pow_display_font.setPointSize(20)
         self.pow_display_4K.setFont(self.pow_display_font)
@@ -732,7 +736,7 @@ class Window(QTabWidget):
         self.pow_display_4K.setText("P<sub>HEAT_4K</sub> = %.2fW"%self.current_pow2)
 
         self.heaterswitch = QPushButton()
-        self.heaterswitch.setFixedSize(250,50)
+        self.heaterswitch.setFixedSize(400,50)
         self.heaterswitch.setText("QCL HEATER (OFF)")
         self.heaterswitch.setStyleSheet("background-color: red")
         self.heaterswitch.clicked.connect(self.htrmanager)
@@ -754,7 +758,7 @@ class Window(QTabWidget):
 
         #pressure display
         self.pressDisp = QLabel()
-        self.pressDisp.setFixedSize(250,50)
+        self.pressDisp.setFixedSize(400,50)
         # self.temp_display_font2 = self.temp_display4K2.font()
         # self.temp_display_font2.setPointSize(20)
         self.pressDisp.setFont(self.temp_display_font)
@@ -764,7 +768,7 @@ class Window(QTabWidget):
 
                 #temp display
         self.temp_display4K2 = QLabel()#QLCDNumber()
-        self.temp_display4K2.setFixedSize(250,50)
+        self.temp_display4K2.setFixedSize(400,50)
         self.temp_display_font2 = self.temp_display4K2.font()
         self.temp_display_font2.setPointSize(20)
         self.temp_display4K2.setFont(self.temp_display_font2)
@@ -774,7 +778,7 @@ class Window(QTabWidget):
         self.temp_display4K2.setText("T<sub>4K2</sub> = %.2fK"%self.current_T4K1)
         #rej temp display
         self.temp_display50K2 = QLabel()#QLCDNumber()
-        self.temp_display50K2.setFixedSize(250,50)
+        self.temp_display50K2.setFixedSize(400,50)
         self.rej_display_font2 = self.temp_display50K2.font()
         self.rej_display_font2.setPointSize(20)
         self.temp_display50K2.setFont(self.rej_display_font2)
@@ -1393,7 +1397,8 @@ class Window(QTabWidget):
 
             self.current_pow = self.LS340_50K.query_htr_out()*8.7/100
         except AttributeError:
-            self.update_output_interface("LS340 is not connected...")
+            print(AttributeError)
+            #self.update_output_interface("LS340 is not connected...")
         # self.current_pow = self.cc.get_CH_power()
         # self.ttarget = self.cc.get_target_temp()
         # self.rej_temp = self.cc.get_reject_temp()
