@@ -38,7 +38,7 @@ except FileNotFoundError:
 from packages import LAKESHORE340 as LS340
 from packages import NRT100 as NRT100
 from packages import K2220G as K2220G
-
+from packages import KS33600A
 #GUI Package imports
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QDialog
@@ -449,10 +449,14 @@ class Window(QTabWidget):
         self.separating_line5.setStyleSheet("border: 2px dashed black;")
         self.separating_line5.setLineWidth(10)
         controlCenter.addWidget(self.separating_line5)
-        #Sweep Controls--------------------------------------------------------------------------
+#SWEEP CONTROLS--------------------------------------------------------------------------
+        self.sweepFrame = QFrame()
+        self.sweepFrame.setFrameShape(QFrame.Box)
+        self.sweepFrame.setLineWidth(10)
+        self.sweepFrame.setStyleSheet("QFrame { border: 2px solid dark green; background-color: white}")
         #params label
         self.sw_label = QLabel()
-        self.sw_label.setText("SWEEP CONTROL PARAMS:")
+        self.sw_label.setText("NRT100 SWEEP CONTROL PARAMS:")
         self.sw_label.setFixedSize(self.controlBarWidth,40)
         self.sw_label.setStyleSheet("background-color: white")
         self.sw_label.setFont(QFont("Arial",12))
@@ -503,28 +507,145 @@ class Window(QTabWidget):
         self.set_frames_button.setStyleSheet("background-color: white")
         self.set_frames_button.clicked.connect(self._grab_framecount)
 
-        #qcl time offset
-        # self.qcl_timeOffset = QTextEdit()
-        # self.qcl_timeOffset.setFixedSize(200,40)
-        # self.qcl_timeOffset.setFont(QFont("Arial", 20))
+        self.start_sweep_button = QPushButton()
+        self.start_sweep_button.setFixedSize(int(1.5*self.controlBarWidth), 75)
+        self.start_sweep_button.setText("BEGIN SWEEP")
+        self.start_sweep_button.setStyleSheet("background-color: white")
+        self.start_sweep_button.clicked.connect(self.on_clicked_motor_sweep)
+#end sweep controls
+#keysight signal gen controls--------------------------------------------------------------
+        #frame setup
+        self.ksFrame = QFrame(self)
+        
+        self.ksFrame.setFrameShape(QFrame.Box)
+        self.ksFrame.setLineWidth(10)
+        self.ksFrame.setStyleSheet("QFrame { border: 2px solid black; background-color: white}")
 
-        # self.qcl_timeOffset_button = QPushButton()
-        # self.qcl_timeOffset_button.setFixedSize(100,40)
-        # self.qcl_timeOffset_button.setText("SET QCL t Offset")
-        # self.qcl_timeOffset_button.setStyleSheet("background-color: white")
-        # self.qcl_timeOffset_button.clicked.connect(self._grab_qclTimeOffset)
+        #controls label
+        self.kslabel = QLabel()
+        self.kslabel.setText("KEYSIGHT SIGNAL GENERATOR CONTROLS")
+        self.kslabel.setStyleSheet("background-color: white")
+        self.kslabel.setFont(QFont("Arial",12))                       
+
+        self.channel_controls = QHBoxLayout()
+        self.channel1_controls = QVBoxLayout()
+        self.channel2_controls = QVBoxLayout()  #necessary layouts for 2 - channel vertical lays
+        
+        #per channel control structure (want freq, phase)
+        #channel 1 controls-------------------------------------------------
+        self.kschan1_lab = QLabel()
+        self.kschan1_lab.setText("CHANNEL 1")
+        self.kschan1_lab.setFixedSize(int(.75*self.controlBarWidth),50)
+        self.kschan1_lab.setFont(QFont("Arial", 10))
+
+
+        #freq control - ch1
+        self.kschan1_freq = QTextEdit()
+        self.kschan1_freq.setFixedSize(int(1.5*self.controlBarWidth/4),50)
+        self.kschan1_freq.setFont(QFont("Arial",10))
+
+        self.kschan1_freq_button = QPushButton()
+        self.kschan1_freq_button.setFixedSize(int(1.5*self.controlBarWidth/4), 50)
+        self.kschan1_freq_button.setStyleSheet("background-color: white")
+        self.kschan1_freq_button.setText("SET FREQ.")
+        #self.kschan1_freq_button.clicked.connect()
+        #phase control - ch1
+        self.kschan1_phase = QTextEdit()
+        self.kschan1_phase.setFixedSize(int(1.5*self.controlBarWidth/4),50)
+        self.kschan1_phase.setFont(QFont("Arial",10))
+
+        self.kschan1_phase_button = QPushButton()
+        self.kschan1_phase_button.setFixedSize(int(1.5*self.controlBarWidth/4), 50)
+        self.kschan1_phase_button.setStyleSheet("background-color: white")
+        self.kschan1_phase_button.setText("SET PHASE (deg)")
+        #self.kschan1_phase_button.clicked.connect()
+
+        #packaging
+        #freq
+        self.kschan1Freq = QHBoxLayout()
+        self.kschan1Freq.addWidget(self.kschan1_freq)
+        self.kschan1Freq.addWidget(self.kschan1_freq_button)
+        #phase
+        self.kschan1Phase = QHBoxLayout()
+        self.kschan1Phase.addWidget(self.kschan1_phase)
+        self.kschan1Phase.addWidget(self.kschan1_phase_button)
+        #channel 1
+        self.channel1_controls.addWidget(self.kschan1_lab)
+        self.channel1_controls.addLayout(self.kschan1Freq)
+        self.channel1_controls.addLayout(self.kschan1Phase)
+
+        #channel 2 controls-------------------------------------------------
+        self.kschan2_lab = QLabel()
+        self.kschan2_lab.setText("CHANNEL 2")
+        self.kschan2_lab.setFixedSize(int(.75*self.controlBarWidth),50)
+        self.kschan2_lab.setFont(QFont("Arial", 10))
+
+        #freq control - ch1
+        self.kschan2_freq = QTextEdit()
+        self.kschan2_freq.setFixedSize(int(1.5*self.controlBarWidth/4),50)
+        self.kschan2_freq.setFont(QFont("Arial",10))
+
+        self.kschan2_freq_button = QPushButton()
+        self.kschan2_freq_button.setFixedSize(int(1.5*self.controlBarWidth/4), 50)
+        self.kschan2_freq_button.setStyleSheet("background-color: white")
+        self.kschan2_freq_button.setText("SET FREQ.")
+        #self.kschan2_freq_button.clicked.connect()
+        #phase control - ch1
+        self.kschan2_phase = QTextEdit()
+        self.kschan2_phase.setFixedSize(int(1.5*self.controlBarWidth/4),50)
+        self.kschan2_phase.setFont(QFont("Arial",10))
+
+        self.kschan2_phase_button = QPushButton()
+        self.kschan2_phase_button.setFixedSize(int(1.5*self.controlBarWidth/4), 50)
+        self.kschan2_phase_button.setStyleSheet("background-color: white")
+        self.kschan2_phase_button.setText("SET PHASE (deg)")
+        #self.kschan2_phase_button.clicked.connect()
+
+        #packaging - ch2
+        #freq
+        self.kschan2Freq = QHBoxLayout()
+        self.kschan2Freq.addWidget(self.kschan2_freq)
+        self.kschan2Freq.addWidget(self.kschan2_freq_button)
+        #phase
+        self.kschan2Phase = QHBoxLayout()
+        self.kschan2Phase.addWidget(self.kschan2_phase)
+        self.kschan2Phase.addWidget(self.kschan2_phase_button)
+        #channel 2
+        self.channel2_controls.addWidget(self.kschan2_lab)
+        self.channel2_controls.addLayout(self.kschan2Freq)
+        self.channel2_controls.addLayout(self.kschan2Phase)
+
+        #packaging (KS)----------------------------------------------------------
+        self.KSCONTROLS = QVBoxLayout()
+        self.KSCONTROLS.addWidget(self.kslabel)
+        self.channel_controls.addLayout(self.channel1_controls) #pack everything in
+        self.channel_controls.addLayout(self.channel2_controls)
+        self.KSCONTROLS.addLayout(self.channel_controls)
+        self.ksFrame.setLayout(self.KSCONTROLS)
+
+        #end ks controls----------------------------------------------------------------------------
         
         sweepControls1.addWidget(self.set_sweep_dx)
         sweepControls1.addWidget(self.set_sweep_dx_button)
         sweepControls2.addWidget(self.set_frames)
         sweepControls2.addWidget(self.set_frames_button)
+        
         #sweepControls3.addWidget(self.qcl_timeOffset)
         #sweepControls3.addWidget(self.qcl_timeOffset_button)
         sweepControls.addLayout(sweepControls1)
         sweepControls.addLayout(sweepControls4)
         sweepControls.addLayout(sweepControls2)
         sweepControls.addLayout(sweepControls3)
-        controlCenter.addLayout(sweepControls)
+
+        self.sweepFrame.setLayout(sweepControls)
+
+        controlCenter.addWidget(self.sweepFrame)
+        controlCenter.addWidget(self.start_sweep_button)
+        
+        #ks controls
+        controlCenter.addWidget(self.ksFrame)
+
+
         #NRT100 POSITION
         self.NRTpos = QLabel()
         self.NRTpos.setText(f"NRT100 POSITION: {self.motor_position}")
@@ -539,6 +660,7 @@ class Window(QTabWidget):
         #self.separating_line6.setStyleSheet("border: 2px dashed black;")
         self.separating_line6.setLineWidth(10)
         controlCenter.addWidget(self.separating_line6)
+
 
         centerlayout.addLayout(controlCenter)
         self.generalLayout.addLayout(centerlayout)
@@ -1069,6 +1191,9 @@ class Window(QTabWidget):
     def motor_sweep(self):
 
         self.K2220G.OUTPUT_ON()
+        self.start_sweep_button.setText("SWEEP IN PROGRESS..")
+        self.start_sweep_button.setStyleSheet("background-color: red")
+
         """Moves motor along sweep parameters as user input in application"""
         print("thread init successful")
 
@@ -1107,6 +1232,8 @@ class Window(QTabWidget):
             print(f"move: {move}")
             self.motorSweepCounter += 1
         self.K2220G.OUTPUT_OFF(channel = 2)
+        self.start_sweep_button.setText("BEGIN SWEEP")
+        self.start_sweep_button.setStyleSheet("background-color: white")
 
     @QtCore.pyqtSlot()
     def on_clicked_file_explore(self):
@@ -1221,6 +1348,12 @@ class Window(QTabWidget):
         except Exception:
             self.update_output_interface("Connection Failed!")
             errors+=1
+
+        #signal generator
+        try:
+            self.KS33600A = KS33600A.Keysight33600A()
+        except Exception:
+            self.update_output_interface("KS33600A Connection Failed")
         #LAKESHORE 340 CONTROLLER
         self.update_output_interface(f"Connecting to LAKESHORE340 Temp Controller...")
         try:
