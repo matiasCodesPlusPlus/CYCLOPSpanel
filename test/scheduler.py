@@ -53,7 +53,7 @@ from PyQt5 import QtCore
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
 import time
-from include.MoutInterpolator import create_manual_output_interpolator
+from packages.MoutInterpolator import create_manual_output_interpolator
 
 class schedulerPopUp(QDialog):
     def __init__(self, parent = None):
