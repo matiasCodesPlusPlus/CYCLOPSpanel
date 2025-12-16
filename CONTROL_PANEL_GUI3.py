@@ -1063,7 +1063,6 @@ class Window(QTabWidget):
         threading.Thread(target = self.motor_sweep, daemon = True).start()
     @QtCore.pyqtSlot()
     def motor_sweep(self):
-        self.numFrames = int(self.numFrames)
 
         self.K2220G.OUTPUT_ON()
         """Moves motor along sweep parameters as user input in application"""
@@ -1081,7 +1080,7 @@ class Window(QTabWidget):
         motorSweepTimerStart = time.time()
         
         self.motorSweepCounter = 0
-        self.update_output_interface(f"Sweep Started. Estimated Time Remaining = {self.frameCount/5 * (self.stage_hiBound-self.stage_loBound)/self.stage_dx}")
+        self.update_output_interface(f"Sweep Started. Estimated Time Remaining = {self.frameCount/4 * (self.stage_hiBound-self.stage_loBound)/self.stage_dx}")
         while move < float(self.stage_hiBound): 
             self.NRT100.movetodist(move)
             #camera stuff here
@@ -1092,7 +1091,7 @@ class Window(QTabWidget):
             
 
                 #self.microxcam.cam_proc(f"{imagefolder}\\image_{i}\\imageON.csv",f"{imagefolder}\\image_{i}\\imageOFF.csv",60, self.K2220G)
-            self.microxcam.qcl_chop(f"{imagefolder}\\imageON.csv", f"{imagefolder}\\imageOFF.csv", self.frameCount)
+            self.microxcam.qcl_chop(f"{imagefolder}\\imageON.csv", f"{imagefolder}\\imageOFF.csv", int(self.frameCount))
             
             
             motorStaticTime = time.time() - motorStaticTimeStart
