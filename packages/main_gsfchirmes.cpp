@@ -287,7 +287,7 @@ void processingLoop(int numFrames)
     int countOn = 0;
     int countOff = 0;
     int frameIndex = 0;
-    static uint64_t lastSeq = 0;
+    uint64_t lastSeq = 0;
     const int dbgPrintInterval = 101;
     int dbgIter = 0;
     while (true)
@@ -484,6 +484,8 @@ DLLEXPORT int qcl_flash(char* onFile, char* offFile, int numFrames, int RAWPROC 
     unsigned char* pchDisplayData = (unsigned char*)malloc(sizeof(unsigned char)*iImageSize); //init display
     int iValSet = 1;
     int iValRet = 0;
+    newFrameAvailable.store(false, std::memory_order_release);
+    frameSeq.store(0, std::memory_order_release);
     //------------------------------------------------------------------------------------process options
     int RAW_PROC_ERROR = fn_SetRAWProcessOption(0); //SETTING RAW PROC OPTION 0-none 1-offset correction
     int dummy;
@@ -527,9 +529,11 @@ DLLEXPORT int qcl_flash(char* onFile, char* offFile, int numFrames, int RAWPROC 
     int RAW_PROC_ERROR2 = fn_SetRAWProcessOption(0); //SETTING RAW PROC OPTION 0-none 1-offset correction
     processingLoop(numFrames);
     //------------------------------------------------------
-    
+    fn_SetCameraCallback(nullptr, nullptr);
     fn_SetExternalTrigger(0,iValRet);
     frameSeq.store(0,std::memory_order_release);
+    free(PfRawData);
+    free(pchDisplayData);
     cout<<"complete"<<endl;
     return 0;
 }
