@@ -15,7 +15,7 @@
 """
 #general imports
 import sys
-sys.path.append(".\\include")
+# sys.path.append("C:\\CYCLOPSpanel\\include")
 
 import csv
 import pyvisa as pv
@@ -28,16 +28,16 @@ from random import randint
 import numpy as np
 import threading
 
-from pressure_sensor import pressureSensor as PS
+from packages.pressure_sensor import pressureSensor as PS
 from collections import deque
 #instrumentation imports
 try:
-    import MICROXCAM_gsfchirmes as MX
+    from packages import MICROXCAM_gsfchirmes as MX
 except FileNotFoundError:
     print("use gsfc fresco for real testing")
-import LAKESHORE340 as LS340
-import NRT100 as NRT100
-import K2220G as K2220G
+from packages import LAKESHORE340 as LS340
+from packages import NRT100 as NRT100
+from packages import K2220G as K2220G
 
 #GUI Package imports
 from PyQt5.QtWidgets import QApplication
@@ -69,7 +69,7 @@ from PyQt5 import QtCore
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
 import time
-from include.MoutInterpolator import create_manual_output_interpolator
+from packages.MoutInterpolator import create_manual_output_interpolator
 
 class _FILEsystemPopUp(QDialog):
 
@@ -137,31 +137,7 @@ class _FILEsystemPopUp(QDialog):
             self.sweepID = f"{self.testID}\\_SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
 
 class Window(QTabWidget):
-    """Main Window Object"""
-    def show_popup(self):
-        # Pass 'self' (the main window) as the parent
-        self.popup_dialog = _FILEsystemPopUp(self)
-        # Use .exec() for a modal dialog (blocks main window input)
-        self.popup_dialog.exec() 
-        
-    def _FILEmanager(self, action):
-        self.USER = os.environ.get("USERNAME")
-        """Use this function for any of the file handeling for this software, all actions can go thru this"""
-        self.DATA_PIPE = "C:\\Users\\{self.USER}\\Desktop\\CYCLOPS_DATA\\COOLDOWNS"
-
-        if action == "create":
-            """create a cooldown file - TODO: map this to correct buttons"""
-            self.testID = f"{self.DATA_PIPE}\\CYCLOPS_RUN_{dt.now().strftime("%Y_%m_%d")}"
-            with open(".\\localMEM\\local_cooldown.txt", "w") as cooldownFile:
-                cooldownFile.writelines(self.testID)
-        elif action == "load":
-            """loads cooldown file from memory, this will be stored in //.localMEM"""
-            with open(".\\localMEM\\local_cooldown.txt", "r") as cooldownFile:
-                self.testID = cooldownFile.readline()
-                cooldownFile.close()
-        elif action == "create-sweep":
-            self.sweepID = f"{self.testID}\\_SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
-
+    
     def __init__(self, parent = None):
         super().__init__(parent)
         self.cooldownDIR = False
@@ -1059,7 +1035,9 @@ class Window(QTabWidget):
         self.microxcam.image_proc(path,ONimage,OFFimage,60)
     @QtCore.pyqtSlot()
     def on_clicked_peripherals(self):
-        threading.Thread(target=self._connectPeripherals, daemon=True).start()
+        #threading.Thread(target=self._connectPeripherals, daemon=True).start()
+        self._connectPeripherals()
+        time.sleep(2)
         self.timer.start()
         self.update_output_interface("Starting Data Acquisition Loop...")
     @QtCore.pyqtSlot(str)
@@ -1550,6 +1528,31 @@ class Window(QTabWidget):
             self.K2220G.OUTPUT_OFF(1) #turn off output 1 for good measure
             self.update_output_interface("QCL ERROR 0001: Temperature too high!")
         return 0
+    
+    def show_popup(self):
+        # Pass 'self' (the main window) as the parent
+        self.popup_dialog = _FILEsystemPopUp(self)
+        # Use .exec() for a modal dialog (blocks main window input)
+        self.popup_dialog.exec() 
+        
+    def _FILEmanager(self, action):
+        self.USER = os.environ.get("USERNAME")
+        """Use this function for any of the file handeling for this software, all actions can go thru this"""
+        self.DATA_PIPE = "C:\\Users\\{self.USER}\\Desktop\\CYCLOPS_DATA\\COOLDOWNS"
+
+        if action == "create":
+            """create a cooldown file - TODO: map this to correct buttons"""
+            self.testID = f"{self.DATA_PIPE}\\CYCLOPS_RUN_{dt.now().strftime("%Y_%m_%d")}"
+            with open(".\\localMEM\\local_cooldown.txt", "w") as cooldownFile:
+                cooldownFile.writelines(self.testID)
+        elif action == "load":
+            """loads cooldown file from memory, this will be stored in //.localMEM"""
+            with open(".\\localMEM\\local_cooldown.txt", "r") as cooldownFile:
+                self.testID = cooldownFile.readline()
+                cooldownFile.close()
+        elif action == "create-sweep":
+            self.sweepID = f"{self.testID}\\_SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
+
 
 
 
