@@ -145,7 +145,7 @@ class Window(QTabWidget):
         super().__init__(parent)
         self.cooldownDIR = False
         self.setWindowTitle("CYCLOPS - VIPA CONTROL PANEL")
-        self.setFixedSize(2000,1500)
+        self.setFixedSize(2100,1500)
         self.voltage = 11.975
         self.connected = False 
 
@@ -320,7 +320,7 @@ class Window(QTabWidget):
         self.tempWidget.setLabel('left', 'Temp.', units='K', color="#d14116", **{'font-size':'12pt'})
         self.tempWidget.getAxis('left').setPen(pen1)
         self.tempWidget.setStyleSheet("border: 1px solid black;")
-
+        self.tempWidget.setFixedSize(1300,1100)
         self.temp_line4K1 = self.tempWidget.plot((np.array(self.times)-self.starttime)/60.0, self.temps4K1, pen=pen1)
         self.temp_line4K2 = self.tempWidget.plot((np.array(self.times)-self.starttime)/60.0, self.temps4K2, pen=pen4)
         self.temp_line50K1 = self.tempWidget.plot((np.array(self.times)-self.starttime)/60.0, self.temps50K1, pen=pen5)
@@ -410,7 +410,7 @@ class Window(QTabWidget):
         self.MXflashed = QPushButton()
         self.MXflashed.setText("FLASHED IMAGE")
         self.MXflashed.setFont(QFont("Arial", 6))
-        self.MXsimple.setFixedSize(int(self.controlBarWidth*.5),40)
+        self.MXflashed.setFixedSize(int(self.controlBarWidth*.5),40)
         MX_subControls.addWidget(self.MXflashed)
 
         controlCenter.addLayout(MX_subControls)
@@ -449,25 +449,24 @@ class Window(QTabWidget):
         self.separating_line5.setStyleSheet("border: 2px dashed black;")
         self.separating_line5.setLineWidth(10)
         controlCenter.addWidget(self.separating_line5)
+
+
 #SWEEP CONTROLS--------------------------------------------------------------------------
+    #layout setup
         self.sweepFrame = QFrame()
+        self.sweepControls = QVBoxLayout()
         self.sweepFrame.setFrameShape(QFrame.Box)
         self.sweepFrame.setLineWidth(10)
-        self.sweepFrame.setStyleSheet("QFrame { border: 2px solid dark green; background-color: white}")
-        #params label
+
+        #params label - OVERHEAD---------------------------------------------------
         self.sw_label = QLabel()
         self.sw_label.setText("NRT100 SWEEP CONTROL PARAMS:")
-        self.sw_label.setFixedSize(self.controlBarWidth,40)
+        self.sw_label.setFixedSize(int(1.5*self.controlBarWidth),40)
         self.sw_label.setStyleSheet("background-color: white")
         self.sw_label.setFont(QFont("Arial",12))
-        controlCenter.addWidget(self.sw_label)
-
-        sweepControls = QVBoxLayout()
-        sweepControls1 = QHBoxLayout()
-        sweepControls2 = QHBoxLayout()
-        sweepControls3 = QHBoxLayout()
-        sweepControls4 = QHBoxLayout()
-        #sweep distance intervals
+        #--------------------------------------------------------------------------
+        
+        #sweep dx-------------------------------------------------------------------
         self.set_sweep_dx = QTextEdit()
         self.set_sweep_dx.setFixedSize(int(self.controlBarWidth),75)
         self.set_sweep_dx.setFont(QFont("Arial", 20))
@@ -477,8 +476,9 @@ class Window(QTabWidget):
         self.set_sweep_dx_button.setText("SET dx (mm)")
         self.set_sweep_dx_button.setStyleSheet("background-color: white")
         self.set_sweep_dx_button.clicked.connect(self._grab_dx)
+        #---------------------------------------------------------------------------
 
-        #sweep bounds
+        #sweep bounds---------------------------------------------------------------
         self.set_sweep_lowBound  = QTextEdit()
         self.set_sweep_lowBound.setFixedSize(int(.5*self.controlBarWidth),75)
         self.set_sweep_lowBound.setFont(QFont("Arial", 20))
@@ -492,11 +492,9 @@ class Window(QTabWidget):
         self.set_sweep_bounds.setText("SET BOUNDS")
         self.set_sweep_bounds.setStyleSheet("background-color: white")
         self.set_sweep_bounds.clicked.connect(self._grab_bounds)
-
-        sweepControls4.addWidget(self.set_sweep_lowBound)
-        sweepControls4.addWidget(self.set_sweep_hiBound)
-        sweepControls4.addWidget(self.set_sweep_bounds)
-        #frames input to camera
+        #---------------------------------------------------------------------------
+        
+        #frames---------------------------------------------------------------------
         self.set_frames = QTextEdit()
         self.set_frames.setFixedSize(int(self.controlBarWidth),75)
         self.set_frames.setFont(QFont("Arial", 20))
@@ -506,26 +504,79 @@ class Window(QTabWidget):
         self.set_frames_button.setText("SET Framecount")
         self.set_frames_button.setStyleSheet("background-color: white")
         self.set_frames_button.clicked.connect(self._grab_framecount)
+        #---------------------------------------------------------------------------
 
+        #SWEEP START----------------------------------------------------------------
         self.start_sweep_button = QPushButton()
-        self.start_sweep_button.setFixedSize(int(1.5*self.controlBarWidth), 75)
+        self.start_sweep_button.setFixedSize(int(750), 75)
         self.start_sweep_button.setText("BEGIN SWEEP")
-        self.start_sweep_button.setStyleSheet("background-color: white")
+        self.start_sweep_button.setStyleSheet("QPushButton {border: 2px solid green; background-color: white}")
         self.start_sweep_button.clicked.connect(self.on_clicked_motor_sweep)
+        
+        #---------------------------------------------------------------------------
+    
+    #PACKAGING----------------------------------------------------------------------------
+        self.sweepDX = QHBoxLayout()
+        self.sweepBOUNDS = QHBoxLayout()
+        self.sweepBOUNDS_txt = QHBoxLayout()
+        self.sweepFRAMES = QHBoxLayout()
+        self.sweepBUTTON = QHBoxLayout()
+        #put together DX control
+        self.sweepDX.addWidget(self.set_sweep_dx)
+        self.sweepDX.addWidget(self.set_sweep_dx_button)
+
+        #put together bounds
+        self.sweepBOUNDS_txt.addWidget(self.set_sweep_lowBound)
+        self.sweepBOUNDS_txt.addWidget(self.set_sweep_hiBound)
+        #bounds button
+        self.sweepBOUNDS.addLayout(self.sweepBOUNDS_txt)
+        self.sweepBOUNDS.addWidget(self.set_sweep_bounds)
+        
+        #put together frames
+        self.sweepFRAMES.addWidget(self.set_frames)
+        self.sweepFRAMES.addWidget(self.set_frames_button)
+
+        #button
+        self.sweepBUTTON.addWidget(self.start_sweep_button, alignment = Qt.AlignmentFlag.AlignCenter)
+
+        self.sweepControls.addWidget(self.sw_label)
+        self.sweepControls.addLayout(self.sweepDX)
+        self.sweepControls.addLayout(self.sweepBOUNDS)
+        self.sweepControls.addLayout(self.sweepFRAMES)
+        self.sweepControls.addLayout(self.sweepBUTTON)
+        
+
+        self.sweepFrame.setStyleSheet("QFrame { border: 2px solid green; background-color: white}")
+        self.sweepFrame.setLayout(self.sweepControls)
+
+        controlCenter.addWidget(self.sweepFrame)
+        controlCenter.addWidget(self.start_sweep_button)
+        
+
 #end sweep controls
 #keysight signal gen controls--------------------------------------------------------------
         #frame setup
         self.ksFrame = QFrame(self)
-        
         self.ksFrame.setFrameShape(QFrame.Box)
         self.ksFrame.setLineWidth(10)
         self.ksFrame.setStyleSheet("QFrame { border: 2px solid black; background-color: white}")
+
+        self.kschan1Frame= QFrame(self)
+        self.kschan1Frame.setFrameShape(QFrame.Box)
+        self.kschan1Frame.setLineWidth(10)
+        self.kschan1Frame.setStyleSheet("QFrame { border: 2px solid blue; background-color: white}")
+        
+        self.kschan2Frame= QFrame(self)
+        self.kschan2Frame.setFrameShape(QFrame.Box)
+        self.kschan2Frame.setLineWidth(10)
+        self.kschan2Frame.setStyleSheet("QFrame { border: 2px solid orange; background-color: white}")
 
         #controls label
         self.kslabel = QLabel()
         self.kslabel.setText("KEYSIGHT SIGNAL GENERATOR CONTROLS")
         self.kslabel.setStyleSheet("background-color: white")
-        self.kslabel.setFont(QFont("Arial",12))                       
+        self.kslabel.setFont(QFont("Arial",12))  
+        self.kslabel.setFixedSize(int(1.5*self.controlBarWidth),40)                     
 
         self.channel_controls = QHBoxLayout()
         self.channel1_controls = QVBoxLayout()
@@ -535,7 +586,7 @@ class Window(QTabWidget):
         #channel 1 controls-------------------------------------------------
         self.kschan1_lab = QLabel()
         self.kschan1_lab.setText("CHANNEL 1")
-        self.kschan1_lab.setFixedSize(int(.75*self.controlBarWidth),50)
+        self.kschan1_lab.setFixedSize(int(self.controlBarWidth/2),50)
         self.kschan1_lab.setFont(QFont("Arial", 10))
 
 
@@ -577,7 +628,7 @@ class Window(QTabWidget):
         #channel 2 controls-------------------------------------------------
         self.kschan2_lab = QLabel()
         self.kschan2_lab.setText("CHANNEL 2")
-        self.kschan2_lab.setFixedSize(int(.75*self.controlBarWidth),50)
+        self.kschan2_lab.setFixedSize(int(self.controlBarWidth/2),50)
         self.kschan2_lab.setFont(QFont("Arial", 10))
 
         #freq control - ch1
@@ -616,33 +667,21 @@ class Window(QTabWidget):
         self.channel2_controls.addLayout(self.kschan2Phase)
 
         #packaging (KS)----------------------------------------------------------
+
+
         self.KSCONTROLS = QVBoxLayout()
         self.KSCONTROLS.addWidget(self.kslabel)
-        self.channel_controls.addLayout(self.channel1_controls) #pack everything in
-        self.channel_controls.addLayout(self.channel2_controls)
+
+        self.kschan1Frame.setLayout(self.channel1_controls)
+        self.kschan2Frame.setLayout(self.channel2_controls)
+
+        self.channel_controls.addWidget(self.kschan1Frame) #pack everything in
+        self.channel_controls.addWidget(self.kschan2Frame)
         self.KSCONTROLS.addLayout(self.channel_controls)
         self.ksFrame.setLayout(self.KSCONTROLS)
 
         #end ks controls----------------------------------------------------------------------------
-        
-        sweepControls1.addWidget(self.set_sweep_dx)
-        sweepControls1.addWidget(self.set_sweep_dx_button)
-        sweepControls2.addWidget(self.set_frames)
-        sweepControls2.addWidget(self.set_frames_button)
-        
-        #sweepControls3.addWidget(self.qcl_timeOffset)
-        #sweepControls3.addWidget(self.qcl_timeOffset_button)
-        sweepControls.addLayout(sweepControls1)
-        sweepControls.addLayout(sweepControls4)
-        sweepControls.addLayout(sweepControls2)
-        sweepControls.addLayout(sweepControls3)
-
-        self.sweepFrame.setLayout(sweepControls)
-
-        controlCenter.addWidget(self.sweepFrame)
-        controlCenter.addWidget(self.start_sweep_button)
-        
-        #ks controls
+        #set on window
         controlCenter.addWidget(self.ksFrame)
 
 
