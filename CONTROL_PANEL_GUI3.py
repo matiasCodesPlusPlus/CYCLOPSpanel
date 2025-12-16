@@ -1078,7 +1078,7 @@ class Window(QTabWidget):
         print(f"loBound: {move} hiBound: {float(self.stage_hiBound)}")
         #self.update_output_interface(f"Sweeping Camera Position over increment: {self.stage_dx} mm")
         motorSweepTimerStart = time.time()
-        self.numFrames = 16000
+        
         self.motorSweepCounter = 0
         self.update_output_interface(f"Sweep Started. Estimated Time Remaining = {self.numFrames/5 * (self.stage_hiBound-self.stage_loBound)/self.stage_dx}")
         while move < float(self.stage_hiBound): 
@@ -1091,7 +1091,7 @@ class Window(QTabWidget):
             
 
                 #self.microxcam.cam_proc(f"{imagefolder}\\image_{i}\\imageON.csv",f"{imagefolder}\\image_{i}\\imageOFF.csv",60, self.K2220G)
-            self.microxcam.qcl_chop(f"{imagefolder}\\imageON.csv", f"{imagefolder}\\imageOFF.csv", self.numFrames)
+            self.microxcam.qcl_chop(f"{imagefolder}\\imageON.csv", f"{imagefolder}\\imageOFF.csv", self.frameCount)
             
             
             motorStaticTime = time.time() - motorStaticTimeStart
