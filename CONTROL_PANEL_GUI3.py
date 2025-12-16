@@ -1080,7 +1080,7 @@ class Window(QTabWidget):
         motorSweepTimerStart = time.time()
         
         self.motorSweepCounter = 0
-        self.update_output_interface(f"Sweep Started. Estimated Time Remaining = {self.numFrames/5 * (self.stage_hiBound-self.stage_loBound)/self.stage_dx}")
+        self.update_output_interface(f"Sweep Started. Estimated Time Remaining = {self.frameCount/5 * (self.stage_hiBound-self.stage_loBound)/self.stage_dx}")
         while move < float(self.stage_hiBound): 
             self.NRT100.movetodist(move)
             #camera stuff here
