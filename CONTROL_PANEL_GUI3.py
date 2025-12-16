@@ -1063,6 +1063,7 @@ class Window(QTabWidget):
         threading.Thread(target = self.motor_sweep, daemon = True).start()
     @QtCore.pyqtSlot()
     def motor_sweep(self):
+        self.numFrames = int(self.numFrames)
 
         self.K2220G.OUTPUT_ON()
         """Moves motor along sweep parameters as user input in application"""
