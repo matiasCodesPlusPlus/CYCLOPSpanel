@@ -292,7 +292,8 @@ void processingLoop(int numFrames)
     int dbgIter = 0;
     while (true)
     {
-        float* pixels = nullptr;
+        //float* pixels = nullptr;
+        std::vector<float> pixels(384*288);
         uint64_t localSeq = 0;
 
         // --- LOCK + WAIT + CAPTURE  ---
@@ -301,7 +302,9 @@ void processingLoop(int numFrames)
             cv.wait(lock, [] { return newFrameAvailable.load(std::memory_order_acquire); });
             
             // capture the frame that triggered 
-            pixels   = &(*readBuffer)[0][0];
+            //pixels   = &(*readBuffer)[0][0];
+            memcpy(pixels.data(), &(*readBuffer)[0][0],
+            384 * 288 * sizeof(float));
             
             localSeq = frameSeq.load(std::memory_order_acquire);
             //this should be the most current image
