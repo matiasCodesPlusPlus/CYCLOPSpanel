@@ -1682,6 +1682,15 @@ class Window(QTabWidget):
     def _grab_qclTimeOffset(self):
         self.qcl_timerOffset = float(self.qcl_timeOffset.toPlainText())
         self.update_output_interface(f"Set QCL flash time offset to {self.qcl_timerOffset} s")
+    
+    def _grab_frequency(self, channel):
+        if channel == 1:
+            self.chan1freq = float(self.kschan1_freq.toPlainText())
+            self.update_output_interface(f"Set KS33600 channel 1 frequency to {self.chan1freq} Hz")
+        elif channel == 2:
+            self.chan2freq = float(self.kschan2_freq.toPlainText)
+            self.update_output_interface(f"Set KS33600 channel 2 frequency to {self.chan2freq} Hz")
+        
 
 
     def htrmanager(self):
