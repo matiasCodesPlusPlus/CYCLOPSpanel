@@ -1225,7 +1225,16 @@ class Window(QTabWidget):
         #self.update_output_interface(f"Moving NRT100 stage to {self.motor_pos_button.toPlainText()} mm")
     @QtCore.pyqtSlot()
     def on_clicked_motor_sweep(self):
-        threading.Thread(target = self.motor_sweep, daemon = True).start()
+        threading.Thread(target = self._on_clicked_voltage_sweep, daemon = True).start()
+
+    @QtCore.pyqtSlot()
+    def on_clicked_thermal_sweep(self):
+        threading.Thread(target = self._on_clicked_thermal_sweep, daemon = True).start()
+
+    @QtCore.pyqtSlot()
+    def on_clicked_thermal_sweep(self):
+        threading.Thread(target = self._on_clicked_voltage_sweep, daemon = True).start()
+
     @QtCore.pyqtSlot()
     def motor_sweep(self):
 
@@ -1296,6 +1305,42 @@ class Window(QTabWidget):
         self.motor_position = self.NRT100.query_position()
         self.NRTpos.setText(f"NRT100 POSITION: {self.motor_position}")
         pass
+
+
+    @QtCore.pyqtSlot()
+    def _on_clicked_thermal_sweep(self):
+        sweepFolder = f"{self.testID}\\THERMAL_SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
+        os.mkdir(sweepFolder)
+        temps = np.linspace(self.tempSweepLOW, self.tempSweepHI, self.tempSweep_Steps)
+        for temp in temps:
+            tempFolder = f"{sweepFolder}\\TEMP_{temp}"
+            os.mkdir(tempFolder)
+            self.LS340_50K.set_setpoint(temp = temp)
+            self.LS340_50K.set_PID(p = 120, i = 30, d = 10)
+            self.LS340_50K.wait_for_settle(target_temp=temp)
+            self.microxcam.qcl_chop(f"{tempFolder}\\imageON.csv", f"{tempFolder}\\imageOFF.csv")
+        self.K2220G.OUTPUT_OFF(2)
+        self.update_output_interface("THERMAL SWEEP COMPLETE!!")
+        pass
+    
+    @QtCore.pyqtSlot()
+    def _on_clicked_voltage_sweep(self):
+        self.voltageSweepLOW = 11.5
+        self.voltageSweepHI = 12.5
+        self.voltageSweepSteps = 11
+        sweepFolder = f"{self.testID}\\VOLTAGE_SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
+        os.mkdir(sweepFolder)
+        volts = np.linspace(self.voltageSweepLOW, self.voltageSweepHI, self.voltageSweepSteps)
+        for volt in volts:
+            voltsFolder = f"{sweepFolder}\\VOLTS_{volts}"
+            os.mkdir(voltsFolder)
+            self.K2220G.SET_VOLTAGE_CURRENT(2,volt,1)
+            time.sleep(2)
+            self.microxcam.qcl_chop(f"{voltsFolder}\\imageON.csv", f"{voltsFolder}\\imageOFF.csv")
+        self.K2220G.OUTPUT_OFF(2)
+
+
+
 
     def _update_label(self, label):
         """Updates NRT100 position label"""
@@ -1683,16 +1728,29 @@ class Window(QTabWidget):
         self.qcl_timerOffset = float(self.qcl_timeOffset.toPlainText())
         self.update_output_interface(f"Set QCL flash time offset to {self.qcl_timerOffset} s")
     
+    #signal generator blocking funcs---------------------------------------------------------------------------
+    @QtCore.pyqtSlot()
     def _grab_frequency(self, channel):
         if channel == 1:
             self.chan1freq = float(self.kschan1_freq.toPlainText())
             self.update_output_interface(f"Set KS33600 channel 1 frequency to {self.chan1freq} Hz")
+            self.KS33600A.set_frequency(1,self.chan1freq)
         elif channel == 2:
             self.chan2freq = float(self.kschan2_freq.toPlainText)
             self.update_output_interface(f"Set KS33600 channel 2 frequency to {self.chan2freq} Hz")
-        
+            self.KS33600A.set_frequency(2,self.chan2freq)
 
-
+    @QtCore.pyqtSlot()    
+    def _grab_phase(self,channel):
+        if channel ==1:
+            self.chan1phase = float(self.kschan1_phase.toPlainText())
+            self.update_output_interface(f"Set KS33600 channel 1 phase to {self.chan1phase}")
+            self.KS33600A.set_phase(1, self.chan1phase)
+        elif channel ==2:
+            self.chan2phase = float(self.kschan2_phase.toPlainText())
+            self.update_output_interface(f"Set KS33600 channel 2 phase to {self.chan2phase}")
+            self.KS33600A.set_phase(2, self.chan2phase)
+    #-----------------------------------------------------------------------------------------------------------
     def htrmanager(self):
         if self.heatstate == False:
             self.Hrange = 5
