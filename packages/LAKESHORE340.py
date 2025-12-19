@@ -246,7 +246,7 @@ class LS340:
             while time.time() - time_start < averaging_time:
                 temps.append(self.readTemp(ch))
                 time.sleep(0.1)
-            temp_avg = np.average(np.array(temps))
+            temp_avg = np.average(np.array(temps, dtype = float))
             print("Current Temp = %.5f K" % temp_avg)
             prev_temp_avg = 0.0
             #check for settling, make sure it is settled within errors twice
@@ -273,9 +273,9 @@ class LS340:
                 time_start = time.time()
                 temps = []
                 while time.time() - time_start < averaging_time:
-                    temps.append(self.read_temp(ch))
+                    temps.append(self.readTemp(ch))
                     time.sleep(0.1)
-                temp_avg = np.average(np.array(temps))
+                temp_avg = np.average(np.array(temps, dtype = float))
                 print("Current Temp = %.5f K" % temp_avg)
             print("Temperature settled and accurate for two consecutive test periods")
             return 1
@@ -416,17 +416,9 @@ if __name__ == "__main__":
     Mout = np.linspace(100,60,9)
     
     temps2 = []
-    LS340 = LS340(14)
+    LS340 = LS340(12)
 
-    for val in Mout:
-        print(f"value: {val}%")
-        LS340.set_manual_out(output = 2, man_out = val)
-        LS340.wait_for_settle()
-        tval = LS340.readTemp(channel = "B")
-        temps2.append([Mout, tval])
-    for row in temps2:
-        print(row)
-    #LS340.loadCurve("",37)
+    LS340.wait_for_settle(target_temp = 50)
     
     
     
