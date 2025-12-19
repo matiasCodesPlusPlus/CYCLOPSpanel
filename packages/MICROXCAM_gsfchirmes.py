@@ -178,7 +178,7 @@ class MICROXCAM:
 
 if __name__ == "__main__":
     cam = MICROXCAM()
-    cam.qcl_chop(".\\SHORT_EXP_ON_0.csv",".\\SHORT_EXP_OFF_0.csv",5) 
+    cam.qcl_chop(".\\SHORT_EXP_ON_0.csv",".\\SHORT_EXP_OFF_0.csv",500) 
     
 
     #TO JAKE:

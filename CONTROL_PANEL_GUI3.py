@@ -1225,7 +1225,7 @@ class Window(QTabWidget):
         #self.update_output_interface(f"Moving NRT100 stage to {self.motor_pos_button.toPlainText()} mm")
     @QtCore.pyqtSlot()
     def on_clicked_motor_sweep(self):
-        threading.Thread(target = self._on_clicked_voltage_sweep, daemon = True).start()
+        threading.Thread(target = self.motor_sweep, daemon = True).start()
 
     @QtCore.pyqtSlot()
     def on_clicked_thermal_sweep(self):
@@ -1258,21 +1258,26 @@ class Window(QTabWidget):
         
         self.motorSweepCounter = 0
         self.update_output_interface(f"Sweep Started. Estimated Time Remaining = {self.frameCount/4 * (self.stage_hiBound-self.stage_loBound)/self.stage_dx}")
+        temps = [48,50,52]
         while move < float(self.stage_hiBound): 
             self.NRT100.movetodist(move)
             #camera stuff here
             imagefolder = f"{sweepfolder}\\IMG_{move}"
             os.mkdir(imagefolder)
-            motorStaticTimeStart = time.time()
+            for temp in temps:
+                tempFolder = f"{imagefolder}\\TEMP_{temp}" 
+            
             #self.microxcam.qcl_chop(f"{imagefolder}\\imageON.csv", f"{imagefolder}\\imageOFF.csv", self.numFrames)
             
 
                 #self.microxcam.cam_proc(f"{imagefolder}\\image_{i}\\imageON.csv",f"{imagefolder}\\image_{i}\\imageOFF.csv",60, self.K2220G)
-            self.microxcam.qcl_chop(f"{imagefolder}\\imageON.csv", f"{imagefolder}\\imageOFF.csv", int(self.frameCount))
+                self.LS340_50K.set_setpoint(temp=temp)
+                self.LS340_50K.wait_for_settle(target_temp = temp)
+                self.microxcam.qcl_chop(f"{imagefolder}\\imageON.csv", f"{imagefolder}\\imageOFF.csv", int(self.frameCount))
             
             
-            motorStaticTime = time.time() - motorStaticTimeStart
-            self.update_output_interface(f"Now Sweeping. Estimated Time Remaining = {motorStaticTime * ((self.stage_hiBound-self.stage_loBound)/self.stage_dx -self.motorSweepCounter)} seconds")
+            
+            
             move = move+self.stage_dx
             #simulate camera interaction
             time.sleep(1)

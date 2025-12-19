@@ -244,7 +244,7 @@ class LS340:
             time_start = time.time()
             temps = []
             while time.time() - time_start < averaging_time:
-                temps.append(self.read_temp(ch))
+                temps.append(self.readTemp(ch))
                 time.sleep(0.1)
             temp_avg = np.average(np.array(temps))
             print("Current Temp = %.5f K" % temp_avg)
