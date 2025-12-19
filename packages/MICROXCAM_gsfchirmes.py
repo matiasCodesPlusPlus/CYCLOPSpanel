@@ -11,7 +11,7 @@ import queue
 
 #import numpy as np
 import time
-import K2220G as K2220G
+
 #os.add_dll_directory(r"C:\\Users\\gsfchirmes\\Desktop\\CYCLOPSpanel\\include")
 #libc = ctypes.LoadLibrary(r"C:\Users\matia\Desktop\c++code\lib\MICROXCAM-384I_CAPI.lib")
 fname = "C:\\Users\\gsfchirmes\\Desktop\\camera\\MICROXCAM-384I_CAPI.dll"
