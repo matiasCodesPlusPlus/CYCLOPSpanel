@@ -145,7 +145,11 @@ class Window(QTabWidget):
         super().__init__(parent)
         self.cooldownDIR = False
         self.setWindowTitle("CYCLOPS - VIPA CONTROL PANEL")
-        self.setFixedSize(2100,1500)
+
+        if os.environ.get("USERNAME") == "gsfchirmes":    #doing window size stuff based on monitors
+            self.setFixedSize(2100,1600)
+        else:
+            self.setFixedSize(2100,1500)
         self.voltage = 11.975
         self.connected = False 
 
@@ -1238,7 +1242,12 @@ class Window(QTabWidget):
     @QtCore.pyqtSlot()
     def motor_sweep(self):
 
+        while (float(self.current_T50K2)> 51):
+            time.sleep(2)
+            self.update_output_interface(f"Now at {self.current_T50K2} K, Waiting until temp is lower")
+        
         self.K2220G.OUTPUT_ON()
+        self.K2220G.SET_VOLTAGE_CURRENT(2,12.08,1)
         self.start_sweep_button.setText("SWEEP IN PROGRESS..")
         self.start_sweep_button.setStyleSheet("background-color: red")
 
@@ -1258,7 +1267,7 @@ class Window(QTabWidget):
         
         self.motorSweepCounter = 0
         self.update_output_interface(f"Sweep Started. Estimated Time Remaining = {self.frameCount/4 * (self.stage_hiBound-self.stage_loBound)/self.stage_dx}")
-        temps = [48,50,52]
+        temps = [50,52,54]
         while move < float(self.stage_hiBound): 
             self.NRT100.movetodist(move)
             #camera stuff here
@@ -1266,14 +1275,57 @@ class Window(QTabWidget):
             os.mkdir(imagefolder)
             for temp in temps:
                 tempFolder = f"{imagefolder}\\TEMP_{temp}" 
+                os.mkdir(tempFolder)
             
             #self.microxcam.qcl_chop(f"{imagefolder}\\imageON.csv", f"{imagefolder}\\imageOFF.csv", self.numFrames)
             
 
                 #self.microxcam.cam_proc(f"{imagefolder}\\image_{i}\\imageON.csv",f"{imagefolder}\\image_{i}\\imageOFF.csv",60, self.K2220G)
                 self.LS340_50K.set_setpoint(temp=temp)
-                self.LS340_50K.wait_for_settle(target_temp = temp)
-                self.microxcam.qcl_chop(f"{imagefolder}\\imageON.csv", f"{imagefolder}\\imageOFF.csv", int(self.frameCount))
+
+
+                averaging_time = 5
+                time_start = time.time()
+                temps = []
+                while time.time() - time_start < averaging_time:
+                    
+                    temps.append(float(self.current_T50K2))
+                    time.sleep(0.1)
+                temp_avg = np.average(np.array(temps, dtype = float))
+                print("Current Temp = %.5f K" % temp_avg)
+                prev_temp_avg = 0.0
+                #check for settling, make sure it is settled within errors twice
+                settled_last_time = False
+                accurate_last_time = False
+                settling_accuracy = .1
+                while np.absolute(temp_avg - prev_temp_avg) > settling_accuracy or np.absolute(temp_avg - temp) > settling_accuracy or not settled_last_time or not accurate_last_time:
+                    settling_accuracy = .0005*temp_avg
+                    if np.absolute(temp_avg - prev_temp_avg) < settling_accuracy:
+                        settled_last_time = True
+                        print("Settled for last test period, waiting one more")
+                    else:
+                        settled_last_time = False
+                        print("Not settled for last test period")
+                    if np.absolute(temp_avg - temp) < settling_accuracy:
+                        accurate_last_time = True
+                        print("Temp at setpoint for last test period, waiting one more")
+                    else:
+                        accurate_last_time = False
+                        print("Temp not at setpoint for last test period")
+                    print("Waiting %.1f seconds for settling test" % 5)
+                    time.sleep(5)
+                    prev_temp_avg = temp_avg
+                    #take data for another averaging period
+                    time_start = time.time()
+                    temps = []
+                    while time.time() - time_start < averaging_time:
+                        temps.append(float(self.current_T50K2))
+                        time.sleep(.05)
+                    temp_avg = np.average(np.array(temps, dtype = float))
+                    print("Current Temp = %.5f K" % temp_avg)
+
+                print("Temperature settled and accurate for two consecutive test periods")
+                self.microxcam.qcl_chop(f"{tempFolder}\\imageON.csv", f"{tempFolder}\\imageOFF.csv", int(self.frameCount))
             
             
             
