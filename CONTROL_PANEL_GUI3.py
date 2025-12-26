@@ -1267,21 +1267,22 @@ class Window(QTabWidget):
         
         self.motorSweepCounter = 0
         self.update_output_interface(f"Sweep Started. Estimated Time Remaining = {self.frameCount/4 * (self.stage_hiBound-self.stage_loBound)/self.stage_dx}")
-        temps = [50,52,54]
+
+        tempsToTest = [50,52,54]
         while move < float(self.stage_hiBound): 
             self.NRT100.movetodist(move)
             #camera stuff here
             imagefolder = f"{sweepfolder}\\IMG_{move}"
             os.mkdir(imagefolder)
-            for temp in temps:
-                tempFolder = f"{imagefolder}\\TEMP_{temp}" 
+            for tempToTest in tempsToTest:
+                tempFolder = f"{imagefolder}\\TEMP_{tempToTest}" 
                 os.mkdir(tempFolder)
             
             #self.microxcam.qcl_chop(f"{imagefolder}\\imageON.csv", f"{imagefolder}\\imageOFF.csv", self.numFrames)
             
 
                 #self.microxcam.cam_proc(f"{imagefolder}\\image_{i}\\imageON.csv",f"{imagefolder}\\image_{i}\\imageOFF.csv",60, self.K2220G)
-                self.LS340_50K.set_setpoint(temp=temp)
+                self.LS340_50K.set_setpoint(temp=tempToTest)
 
 
                 averaging_time = 5
@@ -1298,7 +1299,7 @@ class Window(QTabWidget):
                 settled_last_time = False
                 accurate_last_time = False
                 settling_accuracy = .1
-                while np.absolute(temp_avg - prev_temp_avg) > settling_accuracy or np.absolute(temp_avg - temp) > settling_accuracy or not settled_last_time or not accurate_last_time:
+                while np.absolute(temp_avg - prev_temp_avg) > settling_accuracy or np.absolute(temp_avg - tempToTest) > settling_accuracy or not settled_last_time or not accurate_last_time:
                     settling_accuracy = .0005*temp_avg
                     if np.absolute(temp_avg - prev_temp_avg) < settling_accuracy:
                         settled_last_time = True
@@ -1306,7 +1307,7 @@ class Window(QTabWidget):
                     else:
                         settled_last_time = False
                         print("Not settled for last test period")
-                    if np.absolute(temp_avg - temp) < settling_accuracy:
+                    if np.absolute(temp_avg - tempToTest) < settling_accuracy:
                         accurate_last_time = True
                         print("Temp at setpoint for last test period, waiting one more")
                     else:
@@ -1325,6 +1326,9 @@ class Window(QTabWidget):
                     print("Current Temp = %.5f K" % temp_avg)
 
                 print("Temperature settled and accurate for two consecutive test periods")
+
+                
+                
                 self.microxcam.qcl_chop(f"{tempFolder}\\imageON.csv", f"{tempFolder}\\imageOFF.csv", int(self.frameCount))
             
             
