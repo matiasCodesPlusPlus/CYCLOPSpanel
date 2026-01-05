@@ -178,7 +178,10 @@ class MICROXCAM:
 
 if __name__ == "__main__":
     cam = MICROXCAM()
-    cam.qcl_chop(".\\SHORT_EXP_ON_0.csv",".\\SHORT_EXP_OFF_0.csv",500) 
+    num = 3
+    dir = f".\\FOCUS\\SCREWpos_{num}"
+    os.mkdir(dir)
+    cam.qcl_chop(f"{dir}\\SHORT_EXP_ON.csv",f"{dir}\\SHORT_EXP_OFF.csv",500) 
     
 
     #TO JAKE:

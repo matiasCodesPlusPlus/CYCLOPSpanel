@@ -1242,7 +1242,7 @@ class Window(QTabWidget):
     @QtCore.pyqtSlot()
     def motor_sweep(self):
 
-        while (float(self.current_T50K2)> 51):
+        while (float(self.current_T50K2)> 51.0) or (float(self.current_T4K1) > 4.0):
             time.sleep(2)
             self.update_output_interface(f"Now at {self.current_T50K2} K, Waiting until temp is lower")
         

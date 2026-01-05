@@ -200,7 +200,7 @@ class LS340:
             print("Output %d not recognized" % output)
             return -1
             
-    def wait_for_settle(self, ch = "B", min_wait_time = 100, settling_test_period = 10, settling_accuracy = 0.01, target_temp = None):
+    def wait_for_settle(self, ch = "B", min_wait_time = 100, settling_test_period = 5, settling_accuracy = 0.01, target_temp = None):
         #waits for the temperature of a given channel to settle
         averaging_time = 5 #sec, how long to average temp measurements
         start_time = time.time()
@@ -211,7 +211,7 @@ class LS340:
             time_start = time.time()
             temps = []
             while time.time() - time_start < averaging_time:
-                temps.append(self.readTemp("B"))
+                temps.append(self.readTemp(ch))
                 time.sleep(0.1)
             temp_avg = np.average(np.array(temps, dtype = float))
             print("Current Temp = %.5f K" % temp_avg)
@@ -244,7 +244,8 @@ class LS340:
             time_start = time.time()
             temps = []
             while time.time() - time_start < averaging_time:
-                temps.append(self.readTemp(ch))
+                
+                temps.append(self.readTemp(channel = "B"))
                 time.sleep(0.1)
             temp_avg = np.average(np.array(temps, dtype = float))
             print("Current Temp = %.5f K" % temp_avg)
@@ -273,8 +274,8 @@ class LS340:
                 time_start = time.time()
                 temps = []
                 while time.time() - time_start < averaging_time:
-                    temps.append(self.readTemp(ch))
-                    time.sleep(0.1)
+                    temps.append(self.readTemp(channel = "B"))
+                    time.sleep(.05)
                 temp_avg = np.average(np.array(temps, dtype = float))
                 print("Current Temp = %.5f K" % temp_avg)
             print("Temperature settled and accurate for two consecutive test periods")
