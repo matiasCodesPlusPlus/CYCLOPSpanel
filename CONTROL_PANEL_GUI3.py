@@ -147,10 +147,10 @@ class Window(QTabWidget):
         self.setWindowTitle("CYCLOPS - VIPA CONTROL PANEL")
 
         if os.environ.get("USERNAME") == "gsfchirmes":    #doing window size stuff based on monitors
-            self.setFixedSize(2100,1600)
+            self.setFixedSize(2100,1700)
         else:
-            self.setFixedSize(2100,1500)
-        self.voltage = 11.975
+            self.setFixedSize(2100,1600)
+        self.voltage = 12.08
         self.connected = False 
 
         self.show_popup()
@@ -184,6 +184,11 @@ class Window(QTabWidget):
         self.frameCount = 60
         self.QCLtimerOffset = 1
         #---------------------------- These are edited in-program in the sweep control params menu
+        #voltage sweep params-------------
+        self.volts_dV = 0.5
+        self.volts_loBound = 11.5
+        self.volts_hiBound = 12.5
+        self.volts_framecount = 100
         #THERMOMETRY ----------------------------------------------------------------------------
         self.T4K1 = LS340.THERMOMETER("A", "CRVFILE4K", opTemp=4, location = "ON qcl")
         self.T4K2 = LS340.THERMOMETER("B", "CRVFILE4K",opTemp = 4, location = "4K Stage")
@@ -458,7 +463,18 @@ class Window(QTabWidget):
 #SWEEP CONTROLS--------------------------------------------------------------------------
     #layout setup
         self.sweepFrame = QFrame()
-        self.sweepControls = QVBoxLayout()
+        self.SUPERsweepLayout = QVBoxLayout()
+        self.SUPERsweepTabs = QTabWidget(self.sweepFrame)
+
+        #sweep
+        self.sweepControls_tb = QWidget()
+        #volts
+        self.voltageControls_tb = QWidget()
+        #temp
+        self.tempControls_tb = QWidget()
+
+    #start basic X sweep controls
+        self.sweepControls = QVBoxLayout(self.sweepControls_tb)
         self.sweepFrame.setFrameShape(QFrame.Box)
         self.sweepFrame.setLineWidth(10)
 
@@ -510,16 +526,69 @@ class Window(QTabWidget):
         self.set_frames_button.clicked.connect(self._grab_framecount)
         #---------------------------------------------------------------------------
 
+    #start VOLTAGE sweep controls
+        self.VoltsweepControls = QVBoxLayout(self.voltageControls_tb)
+
+        #params label - OVERHEAD---------------------------------------------------
+        self.V_label = QLabel()
+        self.V_label.setText("VOLTAGE SWEEP CONTROL PARAMS:")
+        self.V_label.setFixedSize(int(1.5*self.controlBarWidth),40)
+        self.V_label.setStyleSheet("background-color: white")
+        self.V_label.setFont(QFont("Arial",12))
+        #--------------------------------------------------------------------------
+        
+        #sweep dx-------------------------------------------------------------------
+        self.set_sweep_dV = QTextEdit()
+        self.set_sweep_dV.setFixedSize(int(self.controlBarWidth),75)
+        self.set_sweep_dV.setFont(QFont("Arial", 20))
+
+        self.set_sweep_dV_button = QPushButton()
+        self.set_sweep_dV_button.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_sweep_dV_button.setText("SET dV (volts)")
+        self.set_sweep_dV_button.setStyleSheet("background-color: white")
+        self.set_sweep_dV_button.clicked.connect(self._grab_dV)                #<------------------------------ new func req
+        #---------------------------------------------------------------------------
+
+        #sweep bounds---------------------------------------------------------------
+        self.set_voltage_sweep_lowBound  = QTextEdit()
+        self.set_voltage_sweep_lowBound.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_voltage_sweep_lowBound.setFont(QFont("Arial", 20))
+
+        self.set_voltage_sweep_hiBound  = QTextEdit()
+        self.set_voltage_sweep_hiBound.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_voltage_sweep_hiBound.setFont(QFont("Arial", 20))
+
+        self.set_voltage_sweep_bounds = QPushButton()
+        self.set_voltage_sweep_bounds.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_voltage_sweep_bounds.setText("SET VOLTAGE BOUNDS")
+        self.set_voltage_sweep_bounds.setStyleSheet("background-color: white")
+        self.set_voltage_sweep_bounds.clicked.connect(self._grab_bounds_voltage)           #<--------------------------new func req
+        #---------------------------------------------------------------------------
+        
+        #frames---------------------------------------------------------------------
+        self.set_voltage_frames = QTextEdit()
+        self.set_voltage_frames.setFixedSize(int(self.controlBarWidth),75)
+        self.set_voltage_frames.setFont(QFont("Arial", 20))
+
+        self.set_voltage_frames_button = QPushButton()
+        self.set_voltage_frames_button.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_voltage_frames_button.setText("SET Framecount")
+        self.set_voltage_frames_button.setStyleSheet("background-color: white")
+        self.set_voltage_frames_button.clicked.connect(self._grab_voltage_framecount)
+        #---------------------------------------------------------------------------
+
+
         #SWEEP START----------------------------------------------------------------
         self.start_sweep_button = QPushButton()
         self.start_sweep_button.setFixedSize(int(750), 75)
         self.start_sweep_button.setText("BEGIN SWEEP")
         self.start_sweep_button.setStyleSheet("QPushButton {border: 2px solid green; background-color: white}")
-        self.start_sweep_button.clicked.connect(self.on_clicked_motor_sweep)
+        self.start_sweep_button.clicked.connect(self.on_clicked_voltage_sweep)
         
         #---------------------------------------------------------------------------
     
     #PACKAGING----------------------------------------------------------------------------
+    #basic sweep packaging------------------------------------------------------------------
         self.sweepDX = QHBoxLayout()
         self.sweepBOUNDS = QHBoxLayout()
         self.sweepBOUNDS_txt = QHBoxLayout()
@@ -549,10 +618,63 @@ class Window(QTabWidget):
         self.sweepControls.addLayout(self.sweepFRAMES)
         self.sweepControls.addLayout(self.sweepBUTTON)
         
+    #voltage sweep packaging----------------------------------------------------------------------------
+        self.sweepDV = QHBoxLayout()
+        self.voltBOUNDS = QHBoxLayout()
+        self.voltBOUNDS_txt = QHBoxLayout()
+        self.voltFRAMES = QHBoxLayout()
+        #self.sweepBUTTON = QHBoxLayout()
+        #put together DX control
+        self.sweepDV.addWidget(self.set_sweep_dV)
+        self.sweepDV.addWidget(self.set_sweep_dV_button)
+
+        #put together bounds
+        self.voltBOUNDS_txt.addWidget(self.set_voltage_sweep_lowBound)
+        self.voltBOUNDS_txt.addWidget(self.set_voltage_sweep_hiBound)
+        #bounds button
+        self.voltBOUNDS.addLayout(self.voltBOUNDS_txt)
+        self.voltBOUNDS.addWidget(self.set_voltage_sweep_bounds)
+        
+        #put together frames
+        self.voltFRAMES.addWidget(self.set_voltage_frames)
+        self.voltFRAMES.addWidget(self.set_voltage_frames_button)
+
+        
+
+        self.VoltsweepControls.addWidget(self.V_label)
+        self.VoltsweepControls.addLayout(self.sweepDV)
+        self.VoltsweepControls.addLayout(self.voltBOUNDS)
+        self.VoltsweepControls.addLayout(self.voltFRAMES)
+        #self.VoltsweepControls.addLayout(self.sweepBUTTON)
+
+#--------------------------------------------------------------------------------------------------------
+
 
         self.sweepFrame.setStyleSheet("QFrame { border: 2px solid green; background-color: white}")
-        self.sweepFrame.setLayout(self.sweepControls)
+        self.sweepFrame.setFrameShape(QFrame.StyledPanel)
+        self.sweepFrame.setLayout(self.SUPERsweepLayout)
+    
+        #tabs-----------------------------------------------------------------------------------------------
+        self.SUPERsweepTabs.setStyleSheet("""
+            QTabBar::tab {
+                min-width: 120px;
+                padding-left: 20px;
+                padding-right: 20px;
+                padding-bottom: 5px;
+                padding-top: 5px;                         
+            }
+            """)
 
+
+        self.SUPERsweepTabs.addTab(self.sweepControls_tb, "X SWEEP")
+        self.SUPERsweepTabs.addTab(self.voltageControls_tb, "VOLTAGE")
+        self.SUPERsweepTabs.addTab(self.tempControls_tb, "TEMPERATURE")
+
+        self.SUPERsweepLayout.addWidget(self.SUPERsweepTabs)
+        #--------------
+        self.sweepControls_tb.setLayout(self.sweepControls)
+        self.voltageControls_tb.setLayout(self.VoltsweepControls)
+        #----------------------
         controlCenter.addWidget(self.sweepFrame)
         controlCenter.addWidget(self.start_sweep_button)
         
@@ -1236,13 +1358,13 @@ class Window(QTabWidget):
         threading.Thread(target = self._on_clicked_thermal_sweep, daemon = True).start()
 
     @QtCore.pyqtSlot()
-    def on_clicked_thermal_sweep(self):
+    def on_clicked_voltage_sweep(self):
         threading.Thread(target = self._on_clicked_voltage_sweep, daemon = True).start()
 
     @QtCore.pyqtSlot()
     def motor_sweep(self):
 
-        while (float(self.current_T50K2)> 51.0) or (float(self.current_T4K1) > 4.0):
+        while (float(self.current_T50K2)> 51):
             time.sleep(2)
             self.update_output_interface(f"Now at {self.current_T50K2} K, Waiting until temp is lower")
         
@@ -1386,18 +1508,19 @@ class Window(QTabWidget):
     
     @QtCore.pyqtSlot()
     def _on_clicked_voltage_sweep(self):
-        self.voltageSweepLOW = 11.5
-        self.voltageSweepHI = 12.5
-        self.voltageSweepSteps = 11
+        self.update_output_interface("BEGINNING VOLTAGE SWEEP (CH2)")
         sweepFolder = f"{self.testID}\\VOLTAGE_SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
         os.mkdir(sweepFolder)
-        volts = np.linspace(self.voltageSweepLOW, self.voltageSweepHI, self.voltageSweepSteps)
+
+        voltSteps = int(np.floor((self.volts_hiBound - self.volts_loBound) / self.volts_dV)) +1
+
+        volts = np.linspace(self.volts_loBound, self.volts_hiBound, voltSteps)
         for volt in volts:
-            voltsFolder = f"{sweepFolder}\\VOLTS_{volts}"
+            voltsFolder = f"{sweepFolder}\\VOLTS_{volt}"
             os.mkdir(voltsFolder)
             self.K2220G.SET_VOLTAGE_CURRENT(2,volt,1)
             time.sleep(2)
-            self.microxcam.qcl_chop(f"{voltsFolder}\\imageON.csv", f"{voltsFolder}\\imageOFF.csv")
+            self.microxcam.qcl_chop(f"{voltsFolder}\\imageON.csv", f"{voltsFolder}\\imageOFF.csv", numFrames = int(self.frameCount))
         self.K2220G.OUTPUT_OFF(2)
 
 
@@ -1778,13 +1901,26 @@ class Window(QTabWidget):
     def _grab_dx(self):
         self.stage_dx = float(self.set_sweep_dx.toPlainText())
         self.update_output_interface(f"set stage dx to {self.stage_dx} mm")
+    def _grab_dV(self):
+        self.volts_dV = float(self.set_sweep_dV.toPlainText())
+        self.update_output_interface(f"set sweep dV to {self.volts_dV} Volts")
+
     def _grab_bounds(self):
         self.stage_loBound = float(self.set_sweep_lowBound.toPlainText())
         self.stage_hiBound = float(self.set_sweep_hiBound.toPlainText())
         self.update_output_interface(f"Set sweep bounds to LOW: {self.stage_loBound}, HIGH: {self.stage_hiBound}")
+    def _grab_bounds_voltage(self):
+        self.volts_loBound = float(self.set_voltage_sweep_lowBound.toPlainText())
+        self.volts_hiBound = float(self.set_voltage_sweep_hiBound.toPlainText())
+        self.update_output_interface(f"Set VOLT bounds to LOW: {self.volts_loBound}, HIGH: {self.volts_hiBound}")
+
     def _grab_framecount(self):
         self.frameCount = float(self.set_frames.toPlainText())
         self.update_output_interface(f"Set averaged frames to {self.frameCount}")
+    def _grab_voltage_framecount(self):
+        self.frameCount = float(self.set_voltage_frames.toPlainText())
+        self.update_output_interface(f"Set averaged frames to {self.frameCount}")
+
     def _grab_qclTimeOffset(self):
         self.qcl_timerOffset = float(self.qcl_timeOffset.toPlainText())
         self.update_output_interface(f"Set QCL flash time offset to {self.qcl_timerOffset} s")
