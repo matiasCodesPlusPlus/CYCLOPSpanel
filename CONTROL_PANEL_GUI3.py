@@ -537,7 +537,7 @@ class Window(QTabWidget):
         self.V_label.setFont(QFont("Arial",12))
         #--------------------------------------------------------------------------
         
-        #sweep dx-------------------------------------------------------------------
+        #sweep dV-------------------------------------------------------------------
         self.set_sweep_dV = QTextEdit()
         self.set_sweep_dV.setFixedSize(int(self.controlBarWidth),75)
         self.set_sweep_dV.setFont(QFont("Arial", 20))
@@ -576,14 +576,63 @@ class Window(QTabWidget):
         self.set_voltage_frames_button.setStyleSheet("background-color: white")
         self.set_voltage_frames_button.clicked.connect(self._grab_voltage_framecount)
         #---------------------------------------------------------------------------
+    #start TEMP sweep controls
+        self.TempsweepControls = QVBoxLayout(self.tempControls_tb)
 
+        #params label - OVERHEAD---------------------------------------------------
+        self.T_label = QLabel()
+        self.T_label.setText("TEMPERATURE SWEEP CONTROL PARAMS:")
+        self.T_label.setFixedSize(int(1.5*self.controlBarWidth),40)
+        self.T_label.setStyleSheet("background-color: white")
+        self.T_label.setFont(QFont("Arial",12))
+        #--------------------------------------------------------------------------
+        
+        #sweep dV-------------------------------------------------------------------
+        self.set_sweep_dT = QTextEdit()
+        self.set_sweep_dT.setFixedSize(int(self.controlBarWidth),75)
+        self.set_sweep_dT.setFont(QFont("Arial", 20))
+
+        self.set_sweep_dT_button = QPushButton()
+        self.set_sweep_dT_button.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_sweep_dT_button.setText("SET dT (K)")
+        self.set_sweep_dT_button.setStyleSheet("background-color: white")
+        self.set_sweep_dT_button.clicked.connect(self._grab_dT)                #<------------------------------ new func req
+        #---------------------------------------------------------------------------
+
+        #sweep bounds---------------------------------------------------------------
+        self.set_temp_sweep_lowBound  = QTextEdit()
+        self.set_temp_sweep_lowBound.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_temp_sweep_lowBound.setFont(QFont("Arial", 20))
+
+        self.set_temp_sweep_hiBound  = QTextEdit()
+        self.set_temp_sweep_hiBound.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_temp_sweep_hiBound.setFont(QFont("Arial", 20))
+
+        self.set_temp_sweep_bounds = QPushButton()
+        self.set_temp_sweep_bounds.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_temp_sweep_bounds.setText("SET TEMP BOUNDS (K)")
+        self.set_temp_sweep_bounds.setStyleSheet("background-color: white")
+        self.set_temp_sweep_bounds.clicked.connect(self._grab_bounds_temp)           #<--------------------------new func req
+        #---------------------------------------------------------------------------
+        
+        #frames---------------------------------------------------------------------
+        self.set_temp_frames = QTextEdit()
+        self.set_temp_frames.setFixedSize(int(self.controlBarWidth),75)
+        self.set_temp_frames.setFont(QFont("Arial", 20))
+
+        self.set_temp_frames_button = QPushButton()
+        self.set_temp_frames_button.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_temp_frames_button.setText("SET Framecount")
+        self.set_temp_frames_button.setStyleSheet("background-color: white")
+        self.set_temp_frames_button.clicked.connect(self._grab_temp_framecount)
+        #---------------------------------------------------------------------------
 
         #SWEEP START----------------------------------------------------------------
         self.start_sweep_button = QPushButton()
         self.start_sweep_button.setFixedSize(int(750), 75)
         self.start_sweep_button.setText("BEGIN SWEEP")
         self.start_sweep_button.setStyleSheet("QPushButton {border: 2px solid green; background-color: white}")
-        self.start_sweep_button.clicked.connect(self.on_clicked_voltage_sweep)
+        self.start_sweep_button.clicked.connect(self.on_clicked_thermal_sweep)
         
         #---------------------------------------------------------------------------
     
@@ -647,6 +696,34 @@ class Window(QTabWidget):
         self.VoltsweepControls.addLayout(self.voltFRAMES)
         #self.VoltsweepControls.addLayout(self.sweepBUTTON)
 
+    #temp sweep packaging----------------------------------------------------------------------------
+        self.sweepDT = QHBoxLayout()
+        self.tempBOUNDS = QHBoxLayout()
+        self.tempBOUNDS_txt = QHBoxLayout()
+        self.tempFRAMES = QHBoxLayout()
+        #self.sweepBUTTON = QHBoxLayout()
+        #put together DX control
+        self.sweepDT.addWidget(self.set_sweep_dT)
+        self.sweepDT.addWidget(self.set_sweep_dT_button)
+
+        #put together bounds
+        self.tempBOUNDS_txt.addWidget(self.set_temp_sweep_lowBound)
+        self.tempBOUNDS_txt.addWidget(self.set_temp_sweep_hiBound)
+        #bounds button
+        self.tempBOUNDS.addLayout(self.tempBOUNDS_txt)
+        self.tempBOUNDS.addWidget(self.set_temp_sweep_bounds)
+        
+        #put together frames
+        self.tempFRAMES.addWidget(self.set_temp_frames)
+        self.tempFRAMES.addWidget(self.set_temp_frames_button)
+
+        
+
+        self.TempsweepControls.addWidget(self.T_label)
+        self.TempsweepControls.addLayout(self.sweepDT)
+        self.TempsweepControls.addLayout(self.tempBOUNDS)
+        self.TempsweepControls.addLayout(self.tempFRAMES)
+        #self.VoltsweepControls.addLayout(self.sweepBUTTON)
 #--------------------------------------------------------------------------------------------------------
 
 
@@ -674,6 +751,7 @@ class Window(QTabWidget):
         #--------------
         self.sweepControls_tb.setLayout(self.sweepControls)
         self.voltageControls_tb.setLayout(self.VoltsweepControls)
+        self.tempControls_tb.setLayout(self.TempsweepControls)
         #----------------------
         controlCenter.addWidget(self.sweepFrame)
         controlCenter.addWidget(self.start_sweep_button)
@@ -1492,23 +1570,67 @@ class Window(QTabWidget):
 
     @QtCore.pyqtSlot()
     def _on_clicked_thermal_sweep(self):
+
         sweepFolder = f"{self.testID}\\THERMAL_SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
         os.mkdir(sweepFolder)
-        temps = np.linspace(self.tempSweepLOW, self.tempSweepHI, self.tempSweep_Steps)
-        for temp in temps:
-            tempFolder = f"{sweepFolder}\\TEMP_{temp}"
+        tempSteps = int(np.floor((self.temp_hiBound - self.temp_loBound) / self.temp_dT)) +1
+
+        tempstoTest = np.linspace(self.temp_loBound, self.temp_hiBound, tempSteps)
+        for tempToTest in tempstoTest:
+            tempFolder = f"{sweepFolder}\\TEMP_{tempToTest}"
             os.mkdir(tempFolder)
-            self.LS340_50K.set_setpoint(temp = temp)
+            self.LS340_50K.set_setpoint(temp = tempToTest)
             self.LS340_50K.set_PID(p = 120, i = 30, d = 10)
-            self.LS340_50K.wait_for_settle(target_temp=temp)
-            self.microxcam.qcl_chop(f"{tempFolder}\\imageON.csv", f"{tempFolder}\\imageOFF.csv")
+
+
+            averaging_time = 5
+            time_start = time.time()
+            temps = []
+            while time.time() - time_start < averaging_time:
+                
+                temps.append(float(self.current_T50K2))
+                time.sleep(0.1)
+            temp_avg = np.average(np.array(temps, dtype = float))
+            print("Current Temp = %.5f K" % temp_avg)
+            prev_temp_avg = 0.0
+            #check for settling, make sure it is settled within errors twice
+            settled_last_time = False
+            accurate_last_time = False
+            settling_accuracy = .1
+            while np.absolute(temp_avg - prev_temp_avg) > settling_accuracy or np.absolute(temp_avg - tempToTest) > settling_accuracy or not settled_last_time or not accurate_last_time:
+                settling_accuracy = .0005*temp_avg
+                if np.absolute(temp_avg - prev_temp_avg) < settling_accuracy:
+                    settled_last_time = True
+                    print("Settled for last test period, waiting one more")
+                else:
+                    settled_last_time = False
+                    print("Not settled for last test period")
+                if np.absolute(temp_avg - tempToTest) < settling_accuracy:
+                    accurate_last_time = True
+                    print("Temp at setpoint for last test period, waiting one more")
+                else:
+                    accurate_last_time = False
+                    print("Temp not at setpoint for last test period")
+                print("Waiting %.1f seconds for settling test" % 5)
+                time.sleep(5)
+                prev_temp_avg = temp_avg
+                #take data for another averaging period
+                time_start = time.time()
+                temps = []
+                while time.time() - time_start < averaging_time:
+                    temps.append(float(self.current_T50K2))
+                    time.sleep(.05)
+                temp_avg = np.average(np.array(temps, dtype = float))
+                print("Current Temp = %.5f K" % temp_avg)
+
+            self.update_output_interface(f"Temperature settled and accurate for two consecutive test periods")
+            self.microxcam.qcl_chop(f"{tempFolder}\\imageON.csv", f"{tempFolder}\\imageOFF.csv", numFrames = int(self.frameCount))
         self.K2220G.OUTPUT_OFF(2)
         self.update_output_interface("THERMAL SWEEP COMPLETE!!")
         pass
     
     @QtCore.pyqtSlot()
     def _on_clicked_voltage_sweep(self):
-        self.update_output_interface("BEGINNING VOLTAGE SWEEP (CH2)")
         sweepFolder = f"{self.testID}\\VOLTAGE_SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
         os.mkdir(sweepFolder)
 
@@ -1516,11 +1638,11 @@ class Window(QTabWidget):
 
         volts = np.linspace(self.volts_loBound, self.volts_hiBound, voltSteps)
         for volt in volts:
-            voltsFolder = f"{sweepFolder}\\VOLTS_{volt}"
+            voltsFolder = f"{sweepFolder}\\VOLTS_{volts}"
             os.mkdir(voltsFolder)
             self.K2220G.SET_VOLTAGE_CURRENT(2,volt,1)
             time.sleep(2)
-            self.microxcam.qcl_chop(f"{voltsFolder}\\imageON.csv", f"{voltsFolder}\\imageOFF.csv", numFrames = int(self.frameCount))
+            self.microxcam.qcl_chop(f"{voltsFolder}\\imageON.csv", f"{voltsFolder}\\imageOFF.csv", numFrames = self.frameCount)
         self.K2220G.OUTPUT_OFF(2)
 
 
@@ -1794,7 +1916,7 @@ class Window(QTabWidget):
             self.current_R50K2 = float(self.LS340_4K.readResistance(self.T50K2.channel))
             self.current_R4K3 = float(self.LS340_50K.readResistance(self.T4K3.channel))
             self.current_R4K4 = float(self.LS340_50K.readResistance(self.T4K4.channel))
-            self.current_chamberPressure = float(self.pressureSensor.readPressure())
+            self.current_chamberPressure = float(self.pressureSensor.readPressure())            #<-------Pretty sure this is our error culprit
 
             self.current_pow = self.LS340_50K.query_htr_out()*8.7/100
         except AttributeError:
@@ -1904,7 +2026,10 @@ class Window(QTabWidget):
     def _grab_dV(self):
         self.volts_dV = float(self.set_sweep_dV.toPlainText())
         self.update_output_interface(f"set sweep dV to {self.volts_dV} Volts")
-
+    def _grab_dT(self):
+        self.temp_dT = float(self.set_sweep_dT.toPlainText())
+        self.update_output_interface(f"set sweep dT to {self.temp_dT} K")
+    #grab bounds---------------------------------------------------------------------------------------------------
     def _grab_bounds(self):
         self.stage_loBound = float(self.set_sweep_lowBound.toPlainText())
         self.stage_hiBound = float(self.set_sweep_hiBound.toPlainText())
@@ -1913,14 +2038,22 @@ class Window(QTabWidget):
         self.volts_loBound = float(self.set_voltage_sweep_lowBound.toPlainText())
         self.volts_hiBound = float(self.set_voltage_sweep_hiBound.toPlainText())
         self.update_output_interface(f"Set VOLT bounds to LOW: {self.volts_loBound}, HIGH: {self.volts_hiBound}")
+    def _grab_bounds_temp(self):
+        self.temp_loBound = float(self.set_temp_sweep_lowBound.toPlainText())
+        self.temp_hiBound = float(self.set_temp_sweep_hiBound.toPlainText())
+        self.update_output_interface(f"Set TEMP bounds to LOW: {self.temp_loBound} K, HIGH: {self.temp_hiBound} K")
 
+    #grab framecounts------------------------------------------------------------------------------------------------
     def _grab_framecount(self):
         self.frameCount = float(self.set_frames.toPlainText())
         self.update_output_interface(f"Set averaged frames to {self.frameCount}")
     def _grab_voltage_framecount(self):
         self.frameCount = float(self.set_voltage_frames.toPlainText())
         self.update_output_interface(f"Set averaged frames to {self.frameCount}")
-
+    def _grab_temp_framecount(self):
+        self.frameCount = float(self.set_temp_frames.toPlainText())
+        self.update_output_interface(f"Set averaged frames to {self.frameCount}")
+    #----------------------------------------------------------------------------------------------------------------
     def _grab_qclTimeOffset(self):
         self.qcl_timerOffset = float(self.qcl_timeOffset.toPlainText())
         self.update_output_interface(f"Set QCL flash time offset to {self.qcl_timerOffset} s")
