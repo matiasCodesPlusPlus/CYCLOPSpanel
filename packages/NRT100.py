@@ -49,7 +49,7 @@ class NRT100():
         time.sleep(1) #this blind delay stuff is bad, TODO: Pull request from public repository with fix
         # start polling at 200 ms
         self.motor.start_polling(self.channel, 200)
-        self.home_stage()
+        
         time.sleep(1)
         pass
 

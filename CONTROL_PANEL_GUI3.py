@@ -1502,6 +1502,7 @@ class Window(QTabWidget):
     def motor_home(self):
         self.textEdit.append('Homing NRT100 Stage.....')
         self.NRT100.home_stage()
+        self.motor_home_button.setStyleSheet("background-color: white")
         self.textEdit.append('Done!')
 
     @QtCore.pyqtSlot()
@@ -1849,6 +1850,7 @@ class Window(QTabWidget):
             self.NRT100 = NRT100.NRT100()
             self.NRT100_label.setStyleSheet("background-color: green")
             self.update_output_interface("Connected to NRT100")
+            
         except Exception:
             self.update_output_interface("Connection Failed!")
             errors+=1
@@ -1900,9 +1902,10 @@ class Window(QTabWidget):
         except Exception:
             self.update_output_interface("Connection to GPMI failed")
             errors+=1
+        self._motor_homeCheck()
         self.update_output_interface(f"Connected to Peripherals with {errors} errors")
         self.timer2.timeout.connect(self.grab_motor_position)
-
+        
     def write_pid_settings(self):
         self.pid_p = float(self.p_input.text())
         self.pid_i = float(self.i_input.text())
@@ -2233,7 +2236,24 @@ class Window(QTabWidget):
         self.popup_dialog = _FILEsystemPopUp(self)
         # Use .exec() for a modal dialog (blocks main window input)
         self.popup_dialog.exec() 
-        
+      
+    def _motor_homeCheck(self):
+        try: 
+            if not self.NRT100.homingCheck():
+                self.motor_home_button.setStyleSheet("background-color: red")
+                self.update_output_interface("Homing NRT100...")
+                self.NRT100.home_motor()
+            else:
+                self.motor_home_button.setStyleSheet("background-color: green")
+                self.update_output_interface("NRT100 ready")
+                pass
+        except AttributeError:
+            self.update_output_interface("NRT100 not connected, cannot home")
+            self.motor_home_button.setStyleSheet("background-color: red")
+
+    
+
+
     def _FILEmanager(self, action):
         self.USER = os.environ.get("USERNAME")
         """Use this function for any of the file handeling for this software, all actions can go thru this"""
