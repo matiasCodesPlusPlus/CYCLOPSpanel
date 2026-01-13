@@ -474,6 +474,9 @@ class Window(QTabWidget):
         self.tempControls_tb = QWidget()
         #freq
         self.freqControls_tb = QWidget()
+        #phase
+        self.phaseControls_tb = QWidget()
+
 
     #start basic X sweep controls
         self.sweepControls = QVBoxLayout(self.sweepControls_tb)
@@ -640,7 +643,7 @@ class Window(QTabWidget):
         self.f_label.setFont(QFont("Arial",12))
         #--------------------------------------------------------------------------
         
-        #sweep dV-------------------------------------------------------------------
+        #sweep df-------------------------------------------------------------------
         self.set_sweep_df = QTextEdit()
         self.set_sweep_df.setFixedSize(int(self.controlBarWidth),75)
         self.set_sweep_df.setFont(QFont("Arial", 20))
@@ -679,6 +682,55 @@ class Window(QTabWidget):
         self.set_freq_frames_button.setStyleSheet("background-color: white")
         self.set_freq_frames_button.clicked.connect(self._grab_freq_framecount)
         #---------------------------------------------------------------------------
+#start PHASE sweep controls
+        self.phasesweepControls = QVBoxLayout(self.phaseControls_tb)
+
+        #params label - OVERHEAD---------------------------------------------------
+        self.phase_label = QLabel()
+        self.phase_label.setText("PHASE<sub>SWITCH</sub> CONTROL PARAMS:")
+        self.phase_label.setFixedSize(int(1.5*self.controlBarWidth),40)
+        self.phase_label.setStyleSheet("background-color: white")
+        self.phase_label.setFont(QFont("Arial",12))
+        #--------------------------------------------------------------------------
+        
+        #sweep df-------------------------------------------------------------------
+        self.set_sweep_dphase = QTextEdit()
+        self.set_sweep_dphase.setFixedSize(int(self.controlBarWidth),75)
+        self.set_sweep_dphase.setFont(QFont("Arial", 20))
+
+        self.set_sweep_dphase_button = QPushButton()
+        self.set_sweep_dphase_button.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_sweep_dphase_button.setText("SET dPhase (deg)")
+        self.set_sweep_dphase_button.setStyleSheet("background-color: white")
+        self.set_sweep_dphase_button.clicked.connect(self._grab_dphase)                #<------------------------------ new func req
+        #---------------------------------------------------------------------------
+
+        #sweep bounds---------------------------------------------------------------
+        self.set_phase_sweep_lowBound  = QTextEdit()
+        self.set_phase_sweep_lowBound.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_phase_sweep_lowBound.setFont(QFont("Arial", 20))
+
+        self.set_phase_sweep_hiBound  = QTextEdit()
+        self.set_phase_sweep_hiBound.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_phase_sweep_hiBound.setFont(QFont("Arial", 20))
+
+        self.set_phase_sweep_bounds = QPushButton()
+        self.set_phase_sweep_bounds.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_phase_sweep_bounds.setText("SET PHASE BOUNDS (deg)")
+        self.set_phase_sweep_bounds.setStyleSheet("background-color: white")
+        self.set_phase_sweep_bounds.clicked.connect(self._grab_bounds_phase)           #<--------------------------new func req
+        #---------------------------------------------------------------------------
+        
+        #frames---------------------------------------------------------------------
+        self.set_phase_frames = QTextEdit()
+        self.set_phase_frames.setFixedSize(int(self.controlBarWidth),75)
+        self.set_phase_frames.setFont(QFont("Arial", 20))
+
+        self.set_phase_frames_button = QPushButton()
+        self.set_phase_frames_button.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_phase_frames_button.setText("SET Framecount")
+        self.set_phase_frames_button.setStyleSheet("background-color: white")
+        self.set_phase_frames_button.clicked.connect(self._grab_phase_framecount)
 
         #SWEEP START----------------------------------------------------------------
         self.start_sweep_button = QPushButton()
@@ -803,6 +855,34 @@ class Window(QTabWidget):
         self.freqsweepControls.addLayout(self.sweepDf)
         self.freqsweepControls.addLayout(self.freqBOUNDS)
         self.freqsweepControls.addLayout(self.freqFRAMES)
+    
+    #phase sweep packaging----------------------------------------------------------------------------
+        self.sweepDphase = QHBoxLayout()
+        self.phaseBOUNDS = QHBoxLayout()
+        self.phaseBOUNDS_txt = QHBoxLayout()
+        self.phaseFRAMES = QHBoxLayout()
+        #self.sweepBUTTON = QHBoxLayout()
+        #put together DX control
+        self.sweepDphase.addWidget(self.set_sweep_dphase)
+        self.sweepDphase.addWidget(self.set_sweep_dphase_button)
+
+        #put together bounds
+        self.phaseBOUNDS_txt.addWidget(self.set_phase_sweep_lowBound)
+        self.phaseBOUNDS_txt.addWidget(self.set_phase_sweep_hiBound)
+        #bounds button
+        self.phaseBOUNDS.addLayout(self.phaseBOUNDS_txt)
+        self.phaseBOUNDS.addWidget(self.set_phase_sweep_bounds)
+        
+        #put together frames
+        self.phaseFRAMES.addWidget(self.set_phase_frames)
+        self.phaseFRAMES.addWidget(self.set_phase_frames_button)
+
+        
+
+        self.phasesweepControls.addWidget(self.phase_label)
+        self.phasesweepControls.addLayout(self.sweepDphase)
+        self.phasesweepControls.addLayout(self.phaseBOUNDS)
+        self.phasesweepControls.addLayout(self.phaseFRAMES)
         #self.VoltsweepControls.addLayout(self.sweepBUTTON)
 #--------------------------------------------------------------------------------------------------------
 
@@ -814,12 +894,20 @@ class Window(QTabWidget):
         #tabs-----------------------------------------------------------------------------------------------
         self.SUPERsweepTabs.setStyleSheet("""
             QTabBar::tab {
-                min-width: 120px;
-                padding-left: 20px;
-                padding-right: 20px;
+                min-width: 110px;
+                padding-left: 10px;
+                padding-right: 10px;
                 padding-bottom: 5px;
-                padding-top: 5px;                         
+                padding-top: 5px;
+                                     
             }
+            QTabBar::tab:selected {
+                background: white;
+                }
+
+            QTabBar::tab:!selected {
+                background: #f5f5f5;
+                }
             """)
 
 
@@ -827,12 +915,14 @@ class Window(QTabWidget):
         self.SUPERsweepTabs.addTab(self.voltageControls_tb, "VOLTAGE")
         self.SUPERsweepTabs.addTab(self.tempControls_tb, "TEMPERATURE")
         self.SUPERsweepTabs.addTab(self.freqControls_tb, "FREQUENCY")
+        self.SUPERsweepTabs.addTab(self.phaseControls_tb, "PHASE")
         self.SUPERsweepLayout.addWidget(self.SUPERsweepTabs)
         #--------------
         self.sweepControls_tb.setLayout(self.sweepControls)
         self.voltageControls_tb.setLayout(self.VoltsweepControls)
         self.tempControls_tb.setLayout(self.TempsweepControls)
         self.freqControls_tb.setLayout(self.freqsweepControls)
+        self.phaseControls_tb.setLayout(self.phasesweepControls)
         #----------------------
         controlCenter.addWidget(self.sweepFrame)
         controlCenter.addWidget(self.start_sweep_button)
@@ -1532,20 +1622,23 @@ class Window(QTabWidget):
 
     @QtCore.pyqtSlot()
     def _on_clicked_phase_test(self):
-        self.frameCount = int(2500)
+        
         sweepfolder = f"{self.testID}\\PHASE_SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
         os.mkdir(sweepfolder)
         self.update_output_interface("Starting Phase Test....\n")
-        phases = [-15, 0, 15]
+        
+        phaseSteps = int(np.floor((self.phase_hiBound - self.phase_loBound) / self.dPhase)) +1
+
+        phases = np.linspace(self.phase_loBound, self.phase_hiBound, phaseSteps)
 
         for phase in phases:
             imagefolder = f"{sweepfolder}\\PHASE_{phase}"
             os.mkdir(imagefolder)
             time.sleep(1)
-            self.update_output_interface(f"Setting Phase to {phase} degrees")
+            self.update_output_interface(f"Setting QCL Switching Phase to {phase} deg")
             self.KS33600A.set_phase(2,phase)
             time.sleep(1)
-            self.microxcam.qcl_chop(f"{imagefolder}\\imageON.csv", f"{imagefolder}\\imageOFF.csv", int(2500))
+            self.microxcam.qcl_chop(f"{imagefolder}\\imageON.csv", f"{imagefolder}\\imageOFF.csv", self.frameCount)
         self.update_output_interface("DONE!!")
         self.K2220G.OUTPUT_OFF(channel = 2)
 
@@ -2174,7 +2267,9 @@ class Window(QTabWidget):
     def _grab_df(self):
         self.freq_df = float(self.set_sweep_df.toPlainText())
         self.update_output_interface(f"set sweep dT to {self.freq_df} Hz")
-
+    def _grab_dphase(self):
+        self.dPhase = float(self.set_sweep_dphase.toPlainText())
+        self.update_output_interface(f"set sweep dPhase to {self.dPhase} Hz")
     
     #grab bounds---------------------------------------------------------------------------------------------------
     def _grab_bounds(self):
@@ -2193,18 +2288,25 @@ class Window(QTabWidget):
         self.freq_loBound = float(self.set_freq_sweep_lowBound.toPlainText())
         self.freq_hiBound = float(self.set_freq_sweep_hiBound.toPlainText())
         self.update_output_interface(f"Set FREQ bounds to LOW: {self.freq_loBound} Hz, HIGH: {self.freq_hiBound} Hz")
+    def _grab_bounds_phase(self):
+        self.phase_loBound = float(self.set_phase_sweep_lowBound.toPlainText())
+        self.phase_hiBound = float(self.set_phase_sweep_hiBound.toPlainText())
+        self.update_output_interface(f"Set PHASE bounds to LOW: {self.freq_loBound} deg, HIGH: {self.freq_hiBound} deg")
     #grab framecounts------------------------------------------------------------------------------------------------
     def _grab_framecount(self):
-        self.frameCount = float(self.set_frames.toPlainText())
+        self.frameCount = int(self.set_frames.toPlainText())
         self.update_output_interface(f"Set averaged frames to {self.frameCount}")
     def _grab_voltage_framecount(self):
-        self.frameCount = float(self.set_voltage_frames.toPlainText())
+        self.frameCount = int(self.set_voltage_frames.toPlainText())
         self.update_output_interface(f"Set averaged frames to {self.frameCount}")
     def _grab_temp_framecount(self):
-        self.frameCount = float(self.set_temp_frames.toPlainText())
+        self.frameCount = int(self.set_temp_frames.toPlainText())
         self.update_output_interface(f"Set averaged frames to {self.frameCount}")
     def _grab_freq_framecount(self):
-        self.frameCount = float(self.set_freq_frames.toPlainText())
+        self.frameCount = int(self.set_freq_frames.toPlainText())
+        self.update_output_interface(f"Set averaged frames to {self.frameCount}")
+    def _grab_phase_framecount(self):
+        self.frameCount = int(self.set_phase_frames.toPlainText())
         self.update_output_interface(f"Set averaged frames to {self.frameCount}")
     #----------------------------------------------------------------------------------------------------------------
     def _grab_qclTimeOffset(self):
