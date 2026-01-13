@@ -2291,7 +2291,7 @@ class Window(QTabWidget):
     def _grab_bounds_phase(self):
         self.phase_loBound = float(self.set_phase_sweep_lowBound.toPlainText())
         self.phase_hiBound = float(self.set_phase_sweep_hiBound.toPlainText())
-        self.update_output_interface(f"Set PHASE bounds to LOW: {self.freq_loBound} deg, HIGH: {self.freq_hiBound} deg")
+        self.update_output_interface(f"Set PHASE bounds to LOW: {self.phase_loBound} deg, HIGH: {self.phase_hiBound} deg")
     #grab framecounts------------------------------------------------------------------------------------------------
     def _grab_framecount(self):
         self.frameCount = int(self.set_frames.toPlainText())
