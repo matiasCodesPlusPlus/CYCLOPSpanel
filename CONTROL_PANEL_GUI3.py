@@ -685,7 +685,7 @@ class Window(QTabWidget):
         self.start_sweep_button.setFixedSize(int(750), 75)
         self.start_sweep_button.setText("BEGIN SWEEP")
         self.start_sweep_button.setStyleSheet("QPushButton {border: 2px solid green; background-color: white}")
-        self.start_sweep_button.clicked.connect(self.on_clicked_frequency_sweep)
+        self.start_sweep_button.clicked.connect(self.on_clicked_phase_test)
         
         #---------------------------------------------------------------------------
     
@@ -884,7 +884,7 @@ class Window(QTabWidget):
         self.kschan1_freq_button.setFixedSize(int(1.5*self.controlBarWidth/4), 50)
         self.kschan1_freq_button.setStyleSheet("background-color: white")
         self.kschan1_freq_button.setText("SET FREQ.")
-        #self.kschan1_freq_button.clicked.connect()
+        self.kschan1_freq_button.clicked.connect(lambda: self._grab_frequency(1))
         #phase control - ch1
         self.kschan1_phase = QTextEdit()
         self.kschan1_phase.setFixedSize(int(1.5*self.controlBarWidth/4),50)
@@ -894,7 +894,7 @@ class Window(QTabWidget):
         self.kschan1_phase_button.setFixedSize(int(1.5*self.controlBarWidth/4), 50)
         self.kschan1_phase_button.setStyleSheet("background-color: white")
         self.kschan1_phase_button.setText("SET PHASE (deg)")
-        #self.kschan1_phase_button.clicked.connect()
+        self.kschan1_phase_button.clicked.connect(lambda: self._grab_phase(1))
 
         #packaging
         #freq
@@ -925,6 +925,7 @@ class Window(QTabWidget):
         self.kschan2_freq_button.setFixedSize(int(1.5*self.controlBarWidth/4), 50)
         self.kschan2_freq_button.setStyleSheet("background-color: white")
         self.kschan2_freq_button.setText("SET FREQ.")
+        self.kschan2_freq_button.clicked.connect(lambda: self._grab_frequency(2))
         #self.kschan2_freq_button.clicked.connect()
         #phase control - ch1
         self.kschan2_phase = QTextEdit()
@@ -935,7 +936,7 @@ class Window(QTabWidget):
         self.kschan2_phase_button.setFixedSize(int(1.5*self.controlBarWidth/4), 50)
         self.kschan2_phase_button.setStyleSheet("background-color: white")
         self.kschan2_phase_button.setText("SET PHASE (deg)")
-        #self.kschan2_phase_button.clicked.connect()
+        self.kschan2_phase_button.clicked.connect(lambda: self._grab_phase(2))
 
         #packaging - ch2
         #freq
@@ -1524,6 +1525,29 @@ class Window(QTabWidget):
     @QtCore.pyqtSlot()
     def on_clicked_frequency_sweep(self):
         threading.Thread(target = self._on_clicked_frequency_sweep, daemon = True).start()
+
+    @QtCore.pyqtSlot()
+    def on_clicked_phase_test(self):
+        threading.Thread(target = self._on_clicked_phase_test, daemon = True).start()
+
+    @QtCore.pyqtSlot()
+    def _on_clicked_phase_test(self):
+        self.frameCount = int(2500)
+        sweepfolder = f"{self.testID}\\PHASE_SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
+        os.mkdir(sweepfolder)
+        self.update_output_interface("Starting Phase Test....\n")
+        phases = [-15, 0, 15]
+
+        for phase in phases:
+            imagefolder = f"{sweepfolder}\\PHASE_{phase}"
+            os.mkdir(imagefolder)
+            time.sleep(1)
+            self.update_output_interface(f"Setting Phase to {phase} degrees")
+            self.KS33600A.set_phase(2,phase)
+            time.sleep(1)
+            self.microxcam.qcl_chop(f"{imagefolder}\\imageON.csv", f"{imagefolder}\\imageOFF.csv", int(2500))
+        self.update_output_interface("DONE!!")
+        self.K2220G.OUTPUT_OFF(channel = 2)
 
     @QtCore.pyqtSlot()
     def motor_sweep(self):
@@ -2150,6 +2174,7 @@ class Window(QTabWidget):
     def _grab_df(self):
         self.freq_df = float(self.set_sweep_df.toPlainText())
         self.update_output_interface(f"set sweep dT to {self.freq_df} Hz")
+
     
     #grab bounds---------------------------------------------------------------------------------------------------
     def _grab_bounds(self):
@@ -2187,25 +2212,37 @@ class Window(QTabWidget):
         self.update_output_interface(f"Set QCL flash time offset to {self.qcl_timerOffset} s")
     
     #signal generator blocking funcs---------------------------------------------------------------------------
-    @QtCore.pyqtSlot()
+    
     def _grab_frequency(self, channel):
         if channel == 1:
-            self.chan1freq = float(self.kschan1_freq.toPlainText())
+            try:
+                self.chan1freq = float(self.kschan1_freq.toPlainText())
+            except ValueError:
+                self.chan1freq = 8.0
             self.update_output_interface(f"Set KS33600 channel 1 frequency to {self.chan1freq} Hz")
             self.KS33600A.set_frequency(1,self.chan1freq)
         elif channel == 2:
-            self.chan2freq = float(self.kschan2_freq.toPlainText)
+            try:
+                self.chan2freq = float(self.kschan2_freq.toPlainText())
+            except ValueError:
+                self.chan2freq = 4.0
             self.update_output_interface(f"Set KS33600 channel 2 frequency to {self.chan2freq} Hz")
             self.KS33600A.set_frequency(2,self.chan2freq)
 
-    @QtCore.pyqtSlot()    
+    
     def _grab_phase(self,channel):
         if channel ==1:
-            self.chan1phase = float(self.kschan1_phase.toPlainText())
+            try:
+                self.chan1phase = float(self.kschan1_phase.toPlainText())
+            except ValueError:
+                self.chan1phase = 0.0
             self.update_output_interface(f"Set KS33600 channel 1 phase to {self.chan1phase}")
             self.KS33600A.set_phase(1, self.chan1phase)
         elif channel ==2:
-            self.chan2phase = float(self.kschan2_phase.toPlainText())
+            try:
+                self.chan2phase = float(self.kschan2_phase.toPlainText())
+            except ValueError:
+                self.chan2phase = 0.0
             self.update_output_interface(f"Set KS33600 channel 2 phase to {self.chan2phase}")
             self.KS33600A.set_phase(2, self.chan2phase)
     #-----------------------------------------------------------------------------------------------------------
