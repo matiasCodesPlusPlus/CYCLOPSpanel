@@ -58,7 +58,11 @@ class NRT100():
         # home the device
         self.motor.home(self.channel)
         
-        
+    def homingCheck(self):
+        return self.motor.can_move_without_homing_first(self.channel)
+    
+    def connectionCheck(self):
+        return self.motor.check_connection()
         
     #TODO: improve wait function for dynamic usage in multi-command operations
     def wait(self,value):
