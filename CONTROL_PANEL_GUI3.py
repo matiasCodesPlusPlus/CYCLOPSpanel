@@ -472,6 +472,8 @@ class Window(QTabWidget):
         self.voltageControls_tb = QWidget()
         #temp
         self.tempControls_tb = QWidget()
+        #freq
+        self.freqControls_tb = QWidget()
 
     #start basic X sweep controls
         self.sweepControls = QVBoxLayout(self.sweepControls_tb)
@@ -627,12 +629,63 @@ class Window(QTabWidget):
         self.set_temp_frames_button.clicked.connect(self._grab_temp_framecount)
         #---------------------------------------------------------------------------
 
+#start FREQ sweep controls
+        self.freqsweepControls = QVBoxLayout(self.freqControls_tb)
+
+        #params label - OVERHEAD---------------------------------------------------
+        self.f_label = QLabel()
+        self.f_label.setText("f<sub>SWITCH</sub> CONTROL PARAMS:")
+        self.f_label.setFixedSize(int(1.5*self.controlBarWidth),40)
+        self.f_label.setStyleSheet("background-color: white")
+        self.f_label.setFont(QFont("Arial",12))
+        #--------------------------------------------------------------------------
+        
+        #sweep dV-------------------------------------------------------------------
+        self.set_sweep_df = QTextEdit()
+        self.set_sweep_df.setFixedSize(int(self.controlBarWidth),75)
+        self.set_sweep_df.setFont(QFont("Arial", 20))
+
+        self.set_sweep_df_button = QPushButton()
+        self.set_sweep_df_button.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_sweep_df_button.setText("SET df (Hz)")
+        self.set_sweep_df_button.setStyleSheet("background-color: white")
+        self.set_sweep_df_button.clicked.connect(self._grab_df)                #<------------------------------ new func req
+        #---------------------------------------------------------------------------
+
+        #sweep bounds---------------------------------------------------------------
+        self.set_freq_sweep_lowBound  = QTextEdit()
+        self.set_freq_sweep_lowBound.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_freq_sweep_lowBound.setFont(QFont("Arial", 20))
+
+        self.set_freq_sweep_hiBound  = QTextEdit()
+        self.set_freq_sweep_hiBound.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_freq_sweep_hiBound.setFont(QFont("Arial", 20))
+
+        self.set_freq_sweep_bounds = QPushButton()
+        self.set_freq_sweep_bounds.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_freq_sweep_bounds.setText("SET FREQ BOUNDS (Hz)")
+        self.set_freq_sweep_bounds.setStyleSheet("background-color: white")
+        self.set_freq_sweep_bounds.clicked.connect(self._grab_bounds_freq)           #<--------------------------new func req
+        #---------------------------------------------------------------------------
+        
+        #frames---------------------------------------------------------------------
+        self.set_freq_frames = QTextEdit()
+        self.set_freq_frames.setFixedSize(int(self.controlBarWidth),75)
+        self.set_freq_frames.setFont(QFont("Arial", 20))
+
+        self.set_freq_frames_button = QPushButton()
+        self.set_freq_frames_button.setFixedSize(int(.5*self.controlBarWidth),75)
+        self.set_freq_frames_button.setText("SET Framecount")
+        self.set_freq_frames_button.setStyleSheet("background-color: white")
+        self.set_freq_frames_button.clicked.connect(self._grab_freq_framecount)
+        #---------------------------------------------------------------------------
+
         #SWEEP START----------------------------------------------------------------
         self.start_sweep_button = QPushButton()
         self.start_sweep_button.setFixedSize(int(750), 75)
         self.start_sweep_button.setText("BEGIN SWEEP")
         self.start_sweep_button.setStyleSheet("QPushButton {border: 2px solid green; background-color: white}")
-        self.start_sweep_button.clicked.connect(self.on_clicked_thermal_sweep)
+        self.start_sweep_button.clicked.connect(self.on_clicked_frequency_sweep)
         
         #---------------------------------------------------------------------------
     
@@ -723,6 +776,33 @@ class Window(QTabWidget):
         self.TempsweepControls.addLayout(self.sweepDT)
         self.TempsweepControls.addLayout(self.tempBOUNDS)
         self.TempsweepControls.addLayout(self.tempFRAMES)
+    #freq sweep packaging----------------------------------------------------------------------------
+        self.sweepDf = QHBoxLayout()
+        self.freqBOUNDS = QHBoxLayout()
+        self.freqBOUNDS_txt = QHBoxLayout()
+        self.freqFRAMES = QHBoxLayout()
+        #self.sweepBUTTON = QHBoxLayout()
+        #put together DX control
+        self.sweepDf.addWidget(self.set_sweep_df)
+        self.sweepDf.addWidget(self.set_sweep_df_button)
+
+        #put together bounds
+        self.freqBOUNDS_txt.addWidget(self.set_freq_sweep_lowBound)
+        self.freqBOUNDS_txt.addWidget(self.set_freq_sweep_hiBound)
+        #bounds button
+        self.freqBOUNDS.addLayout(self.freqBOUNDS_txt)
+        self.freqBOUNDS.addWidget(self.set_freq_sweep_bounds)
+        
+        #put together frames
+        self.freqFRAMES.addWidget(self.set_freq_frames)
+        self.freqFRAMES.addWidget(self.set_freq_frames_button)
+
+        
+
+        self.freqsweepControls.addWidget(self.f_label)
+        self.freqsweepControls.addLayout(self.sweepDf)
+        self.freqsweepControls.addLayout(self.freqBOUNDS)
+        self.freqsweepControls.addLayout(self.freqFRAMES)
         #self.VoltsweepControls.addLayout(self.sweepBUTTON)
 #--------------------------------------------------------------------------------------------------------
 
@@ -746,12 +826,13 @@ class Window(QTabWidget):
         self.SUPERsweepTabs.addTab(self.sweepControls_tb, "X SWEEP")
         self.SUPERsweepTabs.addTab(self.voltageControls_tb, "VOLTAGE")
         self.SUPERsweepTabs.addTab(self.tempControls_tb, "TEMPERATURE")
-
+        self.SUPERsweepTabs.addTab(self.freqControls_tb, "FREQUENCY")
         self.SUPERsweepLayout.addWidget(self.SUPERsweepTabs)
         #--------------
         self.sweepControls_tb.setLayout(self.sweepControls)
         self.voltageControls_tb.setLayout(self.VoltsweepControls)
         self.tempControls_tb.setLayout(self.TempsweepControls)
+        self.freqControls_tb.setLayout(self.freqsweepControls)
         #----------------------
         controlCenter.addWidget(self.sweepFrame)
         controlCenter.addWidget(self.start_sweep_button)
@@ -1440,6 +1521,10 @@ class Window(QTabWidget):
         threading.Thread(target = self._on_clicked_voltage_sweep, daemon = True).start()
 
     @QtCore.pyqtSlot()
+    def on_clicked_frequency_sweep(self):
+        threading.Thread(target = self._on_clicked_frequency_sweep, daemon = True).start()
+
+    @QtCore.pyqtSlot()
     def motor_sweep(self):
 
         while (float(self.current_T50K2)> 51):
@@ -1645,6 +1730,35 @@ class Window(QTabWidget):
             self.microxcam.qcl_chop(f"{voltsFolder}\\imageON.csv", f"{voltsFolder}\\imageOFF.csv", numFrames = self.frameCount)
         self.K2220G.OUTPUT_OFF(2)
 
+    @QtCore.pyqtSlot()
+    def _on_clicked_frequency_sweep(self):
+        self.update_output_interface("STARTING FREQ SWEEP TEST....")
+        time.sleep(1)
+        self.update_output_interface(f"TEST PARAMS: ")
+        time.sleep(1)
+        self.update_output_interface(f"dF: {self.freq_df} Hz")
+        time.sleep(1)
+        self.update_output_interface(f"FREQ BOUNDS: {self.freq_loBound} Hz -> {self.freq_hiBound} Hz")
+        time.sleep(1)
+        
+
+
+        sweepFolder = f"{self.testID}\\FREQ_SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
+        os.mkdir(sweepFolder)
+        freqSteps = int(np.floor((self.freq_hiBound - self.freq_loBound) / self.freq_df)) +1
+
+        freqstoTest = np.linspace(self.freq_loBound, self.freq_hiBound, freqSteps)
+        for freq in freqstoTest:
+
+            self.KS33600A.set_frequency(2,freq)
+            self.KS33600A.set_frequency(1,freq*2)
+
+            freqFolder = f"{sweepFolder}\\FREQ_{freq}"
+            os.mkdir(freqFolder)
+
+            self.microxcam.qcl_chop(f"{freqFolder}\\imageON.csv", f"{freqFolder}\\imageOFF.csv", numFrames = int(self.frameCount))
+        self.K2220G.OUTPUT_OFF(2)
+            
 
 
 
@@ -1742,6 +1856,7 @@ class Window(QTabWidget):
         #signal generator
         try:
             self.KS33600A = KS33600A.Keysight33600A()
+            self.update_output_interface(f"KS33600A Connection Successful")
         except Exception:
             self.update_output_interface("KS33600A Connection Failed")
         #LAKESHORE 340 CONTROLLER
@@ -2029,6 +2144,10 @@ class Window(QTabWidget):
     def _grab_dT(self):
         self.temp_dT = float(self.set_sweep_dT.toPlainText())
         self.update_output_interface(f"set sweep dT to {self.temp_dT} K")
+    def _grab_df(self):
+        self.freq_df = float(self.set_sweep_df.toPlainText())
+        self.update_output_interface(f"set sweep dT to {self.freq_df} Hz")
+    
     #grab bounds---------------------------------------------------------------------------------------------------
     def _grab_bounds(self):
         self.stage_loBound = float(self.set_sweep_lowBound.toPlainText())
@@ -2042,7 +2161,10 @@ class Window(QTabWidget):
         self.temp_loBound = float(self.set_temp_sweep_lowBound.toPlainText())
         self.temp_hiBound = float(self.set_temp_sweep_hiBound.toPlainText())
         self.update_output_interface(f"Set TEMP bounds to LOW: {self.temp_loBound} K, HIGH: {self.temp_hiBound} K")
-
+    def _grab_bounds_freq(self):
+        self.freq_loBound = float(self.set_freq_sweep_lowBound.toPlainText())
+        self.freq_hiBound = float(self.set_freq_sweep_hiBound.toPlainText())
+        self.update_output_interface(f"Set FREQ bounds to LOW: {self.freq_loBound} Hz, HIGH: {self.freq_hiBound} Hz")
     #grab framecounts------------------------------------------------------------------------------------------------
     def _grab_framecount(self):
         self.frameCount = float(self.set_frames.toPlainText())
@@ -2052,6 +2174,9 @@ class Window(QTabWidget):
         self.update_output_interface(f"Set averaged frames to {self.frameCount}")
     def _grab_temp_framecount(self):
         self.frameCount = float(self.set_temp_frames.toPlainText())
+        self.update_output_interface(f"Set averaged frames to {self.frameCount}")
+    def _grab_freq_framecount(self):
+        self.frameCount = float(self.set_freq_frames.toPlainText())
         self.update_output_interface(f"Set averaged frames to {self.frameCount}")
     #----------------------------------------------------------------------------------------------------------------
     def _grab_qclTimeOffset(self):
