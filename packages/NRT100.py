@@ -57,9 +57,7 @@ class NRT100():
     def home_stage(self):
         # home the device
         self.motor.home(self.channel)
-    
-    def homeCheck(self):
-        return self.motor.can_move_without_homing_first(self.channel)
+        
         
         
     #TODO: improve wait function for dynamic usage in multi-command operations
@@ -91,8 +89,6 @@ class NRT100():
         power_params = self.motor.get_power_params(self.channel) #power analytics
         print(power_params)
         pass
-    def connectionCheck(self):
-        self.motor.check_connection()
 
 if __name__ == "__main__":
     NRT100 = NRT100()

@@ -178,35 +178,10 @@ class MICROXCAM:
 
 if __name__ == "__main__":
     cam = MICROXCAM()
-    num = 3
+    num = 4.75
     dir = f".\\FOCUS\\SCREWpos_{num}"
     os.mkdir(dir)
     cam.qcl_chop(f"{dir}\\SHORT_EXP_ON.csv",f"{dir}\\SHORT_EXP_OFF.csv",500) 
     
 
-    #TO JAKE:
-
-        #-> press the play button in the upper right after ensuring that qcl is on/flashing
-
-        #-> the software will handle everything else, i'll have the power to the qcl shut off upon completion of the test
-
-        #-> If you get an error saying "NOT INITIALIZED" just ensure that the camera is not connected to the INO GUI and re-run
-            #there will be no extra setup involved
-
-        #-> should get a readout updates roughly 25 seconds apart with some basic stats on the most recent image taken, after verifying 
-        #that the first one of these has come through, the system can be left to do its thing
-
-        #-> Images will be saved under the fileNames entered in the input to qcl_chop, but I'll handle the stuff with that tomorrow morning
-
-        #IF YOU DO FEEL LIKE TAKING A FEW SHORT EXPOSURES:
-        #-------------------------------------------------
-            #->CONTROLLING EXPOSURE TIME: 
-                #numFrames (the func input) = exposure_time_in_seconds*(qcl switch freq (4Hz)) IT WILL TAKE numFrames OFF and numFrames ON, it is currently set for a roughly 10 hour exposure
-
-            #-> I do not have a way of managing files in a nice way for this yet, as I'm still working out how I want to do the overall data collection system (In the process of changing this in our Application)
-                #this means you  have to drag the new images into a diff folder before starting the next run (or change the filename input so they dont get overwritten)
-
-                #you can find them in the "EXPLORER" tab on the LHS of the IDE in the ".\\LONG_EXP_IMAGES" directory
-                #Im sorry I know this is super annoying (apologies)
-
-            #->If you want to look at images go to the quick_image_proc tab, it just has basic image subtraction/average noise removal code (can be run by play button, already set to run for current output)
+    
