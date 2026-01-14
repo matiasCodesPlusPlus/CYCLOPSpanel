@@ -817,7 +817,7 @@ class Window(QTabWidget):
         self.start_sweep_button.setFixedSize(int(750), 75)
         self.start_sweep_button.setText("BEGIN SWEEP")
         self.start_sweep_button.setStyleSheet("QPushButton {border: 2px solid green; background-color: white}")
-        self.start_sweep_button.clicked.connect(self.on_clicked_phase_test)
+        self.start_sweep_button.clicked.connect(self.on_clicked_voltage_sweep)
         
         #---------------------------------------------------------------------------
     
