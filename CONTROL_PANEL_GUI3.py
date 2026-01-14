@@ -3,8 +3,7 @@
     
     DO immediately
     --------------
-    TODO: heater controls (TEST READY)
-    TODO: file convention for camera images, preferably based on camera location along stage 
+    TODO: REdo top panel design
     
     NOT immediately
     --------------
@@ -70,6 +69,45 @@ from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
 import time
 from packages.MoutInterpolator import create_manual_output_interpolator
+
+
+class LedIndicator(QLabel):
+    def __init__(self, diameter=14, parent=None):
+        super().__init__(parent)
+        self.diameter = diameter
+        self.setFixedSize(diameter, diameter)
+        self.setAlignment(Qt.AlignCenter)
+        self.set_off()
+
+    def set_on(self, color="green"):
+        self.setStyleSheet(f"""
+            QLabel {{
+                background-color: {color};
+                border-radius: {self.diameter // 2}px;
+                border: 1px solid black;
+            }}
+        """)
+
+    def set_off(self):
+        self.setStyleSheet(f"""
+            QLabel {{
+                background-color: #444;
+                border-radius: {self.diameter // 2}px;
+                border: 1px solid black;
+            }}
+        """)
+
+class StatusRow(QWidget):
+    def __init__(self, name):
+        super().__init__()
+
+        self.led = LedIndicator()
+        self.label = QLabel(name)
+
+        layout = QHBoxLayout(self)
+        layout.addWidget(self.led)
+        layout.addWidget(self.label)
+        layout.addStretch()
 
 class _FILEsystemPopUp(QDialog):
 
@@ -149,7 +187,7 @@ class Window(QTabWidget):
         if os.environ.get("USERNAME") == "gsfchirmes":    #doing window size stuff based on monitors
             self.setFixedSize(2100,1700)
         else:
-            self.setFixedSize(2100,1600)
+            self.setFixedSize(2100,1650)
         self.voltage = 12.08
         self.connected = False 
 
@@ -244,14 +282,60 @@ class Window(QTabWidget):
         """
         """BOTTOM ROW LAYOUT:
             -> OUTPUT LINE INTERFACE"""
-        #CAMERA CONNECTION----------------------------------------------------------------
+        #periph CONNECTION----------------------------------------------------------------
         top_row = QHBoxLayout()
         self.controlBarWidth = 400
+        
+        #setting up left side control Frame
+        self.leftside_control = QFrame()
+        self.leftside_control.setStyleSheet("border: 2px solid blue")
+
+        self.motorSide_control = QFrame()
+        self.motorSide_control.setStyleSheet("border: 2px solid green")
+
+        top_row = QHBoxLayout(self.leftside_control)
+
+        #new periph status setup-----------------------------------------------------------
+        self.peripheral_Status_SUPER = QHBoxLayout()
+
+        self.peripheral_Status_LEFT = QVBoxLayout()
+        self.peripheral_Status_CENTER = QVBoxLayout()
+        self.peripheral_Status_RIGHT = QVBoxLayout()
+
+        self.peripheral_Status_SUPER.addLayout(self.peripheral_Status_LEFT)
+        self.peripheral_Status_SUPER.addLayout(self.peripheral_Status_CENTER)
+        self.peripheral_Status_SUPER.addLayout(self.peripheral_Status_RIGHT)
+        #LEDs for peripheral stats-------------------------------------------------------------------------------
+        self.NRT100_status_LED = StatusRow("NRT100")
+        self.K2220G_status_LED = StatusRow("K2220G")
+        self.MICROXCAM_status_LED = StatusRow("uX-CAM")
+        self.KS33600A_status_LED = StatusRow("KS3360")
+        self.LS340_4K_status_LED = StatusRow("LS340-04K")
+        self.LS340_50K_status_LED = StatusRow("LS340-50K")
+        self.GPMI_status_LED = StatusRow("GP-uIon")
+        #set all to red - start default
+        self.NRT100_status_LED.led.set_on("red")
+        self.K2220G_status_LED.led.set_on("red")
+        self.MICROXCAM_status_LED.led.set_on("red")
+        self.KS33600A_status_LED.led.set_on("red")
+        self.LS340_4K_status_LED.led.set_on("red")
+        self.LS340_50K_status_LED.led.set_on("red")
+        self.GPMI_status_LED.led.set_on("red")
+        #quick packaging into subframes
+        self.peripheral_Status_LEFT.addWidget(self.NRT100_status_LED)
+        self.peripheral_Status_LEFT.addWidget(self.K2220G_status_LED)
+        self.peripheral_Status_CENTER.addWidget(self.MICROXCAM_status_LED)
+        self.peripheral_Status_CENTER.addWidget(self.KS33600A_status_LED)
+        self.peripheral_Status_RIGHT.addWidget(self.LS340_4K_status_LED)
+        self.peripheral_Status_RIGHT.addWidget(self.LS340_50K_status_LED)
+
+        #---------------------------------------------------------------------------------------------------------
+        
 
         #peripherals connection
         self.periph_connect_button = QPushButton("CONNECT PERIPHERALS")
         self.periph_connect_button.setFont(QFont("Arial",10))
-        self.periph_connect_button.setFixedSize(300,40)
+        self.periph_connect_button.setFixedSize(300,80)
         self.periph_connect_button.setStyleSheet("background-color: red")
         self.periph_connect_button.clicked.connect(self.on_clicked_peripherals)
 
@@ -281,27 +365,23 @@ class Window(QTabWidget):
         self.pos_text.setFixedSize(75,40)
         self.pos_text.setFont(QFont("Arial",12))
 
-        #motor current position label-------------------------------------------------------------------
-        # self.motor_pos_lab = QLabel(self.tab1)
-        # self.motor_pos_lab.setText("NRT100 at 0 mm")
-        # self.motor_pos_lab.setFixedSize(300,40)
-        # self.motor_pos_lab.setFont(QFont("Arial",16))
-
         #move motor to position button------------------------------------------------------------------
         self.motor_pos_button = QPushButton("MOVE TO POSITION")
         self.motor_pos_button.setFont(QFont("Arial",11))
         self.motor_pos_button.setFixedSize(225,40)
         self.motor_pos_button.setStyleSheet("background-color: white")
         self.motor_pos_button.clicked.connect(self.on_clicked_motor_move)
-        #add buttons to row
+
+        #packaging top row
         top_row.addWidget(self.periph_connect_button, alignment = Qt.AlignLeft)
+        top_row.addLayout(self.peripheral_Status_SUPER)
         top_row.addWidget(self.data_button, alignment = Qt.AlignLeft)
         top_row.addWidget(self.motor_home_button, alignment = Qt.AlignLeft)
         top_row.addWidget(self.motor_sweep_button, alignment = Qt.AlignLeft)
         top_row.addWidget(self.pos_text)#, alignment = Qt.AlignLeft)
         top_row.addWidget(self.motor_pos_button)
         #top_row.addWidget(self.motor_pos_lab)
-        self.generalLayout.addLayout(top_row)
+        self.generalLayout.addWidget(self.leftside_control)
 
         centerlayout = QHBoxLayout()
         #GRAPHING
@@ -1639,6 +1719,7 @@ class Window(QTabWidget):
             self.KS33600A.set_phase(2,phase)
             time.sleep(1)
             self.microxcam.qcl_chop(f"{imagefolder}\\imageON.csv", f"{imagefolder}\\imageOFF.csv", self.frameCount)
+            self.metaData_handler(path = imagefolder)
         self.update_output_interface("DONE!!")
         self.K2220G.OUTPUT_OFF(channel = 2)
 
@@ -1828,6 +1909,7 @@ class Window(QTabWidget):
 
             self.update_output_interface(f"Temperature settled and accurate for two consecutive test periods")
             self.microxcam.qcl_chop(f"{tempFolder}\\imageON.csv", f"{tempFolder}\\imageOFF.csv", numFrames = int(self.frameCount))
+            self.metaData_handler(path = tempFolder)
         self.K2220G.OUTPUT_OFF(2)
         self.update_output_interface("THERMAL SWEEP COMPLETE!!")
         pass
@@ -1846,6 +1928,7 @@ class Window(QTabWidget):
             self.K2220G.SET_VOLTAGE_CURRENT(2,volt,1)
             time.sleep(2)
             self.microxcam.qcl_chop(f"{voltsFolder}\\imageON.csv", f"{voltsFolder}\\imageOFF.csv", numFrames = self.frameCount)
+            self.metaData_handler(path = voltsFolder)
         self.K2220G.OUTPUT_OFF(2)
 
     @QtCore.pyqtSlot()
@@ -1875,6 +1958,7 @@ class Window(QTabWidget):
             os.mkdir(freqFolder)
 
             self.microxcam.qcl_chop(f"{freqFolder}\\imageON.csv", f"{freqFolder}\\imageOFF.csv", numFrames = int(self.frameCount))
+            self.metaData_handler(path = freqFolder)
         self.K2220G.OUTPUT_OFF(2)
             
 
@@ -1957,6 +2041,9 @@ class Window(QTabWidget):
             self.microxcam = MX.MICROXCAM()
             self.update_output_interface("Connected!")
             self.MICROXCAM_label.setStyleSheet("background-color: green")
+
+            self.MICROXCAM_status_LED.led.set_on("green")
+        
         except ConnectionError:
             self.update_output_interface("Connection Failed!")
             errors+=1
@@ -1967,6 +2054,8 @@ class Window(QTabWidget):
             self.NRT100 = NRT100.NRT100()
             self.NRT100_label.setStyleSheet("background-color: green")
             self.update_output_interface("Connected to NRT100")
+
+            self.NRT100_status_LED.led.set_on("green")
             
         except Exception:
             self.update_output_interface("Connection Failed!")
@@ -1976,6 +2065,8 @@ class Window(QTabWidget):
         try:
             self.KS33600A = KS33600A.Keysight33600A()
             self.update_output_interface(f"KS33600A Connection Successful")
+
+            self.KS33600A_status_LED.led.set_on("green")
         except Exception:
             self.update_output_interface("KS33600A Connection Failed")
         #LAKESHORE 340 CONTROLLER
@@ -1994,7 +2085,8 @@ class Window(QTabWidget):
             self.LSTC_1.setStyleSheet("background-color: green")
             self.LSTC_2.setStyleSheet("background-color: green")
             self.LS340_label.setStyleSheet("background-color: green")
-           
+            self.LS340_4K_status_LED.led.set_on("green")
+            self.LS340_50K_status_LED.led.set_on("green")
         except pv.errors.VisaIOError:
             self.update_output_interface("Connection Failed!")
             errors+=1
@@ -2004,7 +2096,7 @@ class Window(QTabWidget):
             self.K2220G = K2220G.K2220G(LS340 = self.LS340_50K)
             self.update_output_interface(f"K2220G Connected!")
             self.K2220G_label.setStyleSheet("background-color: green")
-
+            self.K2220G_status_LED.led.set_on("green")
         except pv.errors.VisaIOError:
             self.update_output_interface(f"Connection Failed!")
             errors+=1
@@ -2016,6 +2108,7 @@ class Window(QTabWidget):
         try:
             self.pressureSensor = PS()
             self.update_output_interface("GPMI connected!!")
+            
         except Exception:
             self.update_output_interface("Connection to GPMI failed")
             errors+=1
@@ -2293,6 +2386,7 @@ class Window(QTabWidget):
         self.phase_hiBound = float(self.set_phase_sweep_hiBound.toPlainText())
         self.update_output_interface(f"Set PHASE bounds to LOW: {self.phase_loBound} deg, HIGH: {self.phase_hiBound} deg")
     #grab framecounts------------------------------------------------------------------------------------------------
+
     def _grab_framecount(self):
         self.frameCount = int(self.set_frames.toPlainText())
         self.update_output_interface(f"Set averaged frames to {self.frameCount}")
@@ -2410,6 +2504,29 @@ class Window(QTabWidget):
                 cooldownFile.close()
         elif action == "create-sweep":
             self.sweepID = f"{self.testID}\\_SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
+        
+    def metaData_handler(self,path):
+        """Will store metadata for an active image in the specified path"""
+        header = "Image MetaData"
+        headl2 = "--------------"
+        dl1 = f"STAGE POSITION, {self.NRT100.query_position()}"
+        dl2 = f"QCL TEMP, {self.current_T50K2}"
+        dl3 = f"QCL VOLT, {self.K2220G.MEAS_VOLTAGE(channel=2)}"
+        dl4 = f"QCL CURRENT, {self.K2220G.MEAS_CURRENT(channel = 2)}"
+        dl5 = f"FRAMECOUNT, {self.frameCount}"
+        lines = [
+            header,
+            headl2,
+            dl1,
+            dl2,
+            dl3,
+            dl4,
+            dl5
+        ]
+        with open(f"{path}\\image_metaData.txt", "w", encoding="utf-8") as file:
+            for line in lines:
+                file.write(line+"\n")
+                file.close()
 
 
 
