@@ -1916,6 +1916,7 @@ class Window(QTabWidget):
     
     @QtCore.pyqtSlot()
     def _on_clicked_voltage_sweep(self):
+        self.update_output_interface(f"STARTING VOLTAGE SWEEP")
         sweepFolder = f"{self.testID}\\VOLTAGE_SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
         os.mkdir(sweepFolder)
 
@@ -1926,10 +1927,14 @@ class Window(QTabWidget):
             voltsFolder = f"{sweepFolder}\\VOLTS_{volts}"
             os.mkdir(voltsFolder)
             self.K2220G.SET_VOLTAGE_CURRENT(2,volt,1)
+            
             time.sleep(2)
+            self.update_output_interface(f"SETTING VOLTAGE TO {volt} V")
+            time.sleep(1)
             self.microxcam.qcl_chop(f"{voltsFolder}\\imageON.csv", f"{voltsFolder}\\imageOFF.csv", numFrames = self.frameCount)
             self.metaData_handler(path = voltsFolder)
         self.K2220G.OUTPUT_OFF(2)
+        self.update_output_interface("VOLTAGE SWEEP COMPLETE")
 
     @QtCore.pyqtSlot()
     def _on_clicked_frequency_sweep(self):
