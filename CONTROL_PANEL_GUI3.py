@@ -2560,6 +2560,7 @@ class Window(QTabWidget):
             for line in lines:
                 file.write(line+"\n")
         file.close()
+        pass
 
 
 
