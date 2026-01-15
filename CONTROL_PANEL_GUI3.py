@@ -185,7 +185,7 @@ class Window(QTabWidget):
         self.setWindowTitle("CYCLOPS - VIPA CONTROL PANEL")
 
         if os.environ.get("USERNAME") == "gsfchirmes":    #doing window size stuff based on monitors
-            self.setFixedSize(2100,1700)
+            self.setFixedSize(2100,1750)
         else:
             self.setFixedSize(2100,1650)
         self.voltage = 12.08
@@ -1924,7 +1924,7 @@ class Window(QTabWidget):
 
         volts = np.linspace(self.volts_loBound, self.volts_hiBound, voltSteps)
         for volt in volts:
-            voltsFolder = f"{sweepFolder}\\VOLTS_{volts}"
+            voltsFolder = f"{sweepFolder}\\VOLTS_{volt}"
             os.mkdir(voltsFolder)
             self.K2220G.SET_VOLTAGE_CURRENT(2,volt,1)
             
@@ -2531,7 +2531,7 @@ class Window(QTabWidget):
         with open(f"{path}\\image_metaData.txt", "w", encoding="utf-8") as file:
             for line in lines:
                 file.write(line+"\n")
-                file.close()
+        file.close()
 
 
 
