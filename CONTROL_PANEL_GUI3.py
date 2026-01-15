@@ -69,7 +69,15 @@ from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
 import time
 from packages.MoutInterpolator import create_manual_output_interpolator
+from enum import Enum, auto
 
+
+class TestType(Enum):
+    X_SWEEP = auto()
+    FREQUENCY_SWEEP = auto()
+    VOLTAGE_SWEEP = auto()
+    TEMP_SWEEP = auto()
+    PHASE_SWEEP = auto()
 
 class LedIndicator(QLabel):
     def __init__(self, diameter=14, parent=None):
@@ -817,7 +825,7 @@ class Window(QTabWidget):
         self.start_sweep_button.setFixedSize(int(750), 75)
         self.start_sweep_button.setText("BEGIN SWEEP")
         self.start_sweep_button.setStyleSheet("QPushButton {border: 2px solid green; background-color: white}")
-        self.start_sweep_button.clicked.connect(self.on_clicked_voltage_sweep)
+        self.start_sweep_button.clicked.connect(self._on_clicked_TestManager)
         
         #---------------------------------------------------------------------------
     
@@ -992,10 +1000,15 @@ class Window(QTabWidget):
 
 
         self.SUPERsweepTabs.addTab(self.sweepControls_tb, "X SWEEP")
+        self.SUPERsweepTabs.tabBar().setTabData(0,TestType.X_SWEEP)
         self.SUPERsweepTabs.addTab(self.voltageControls_tb, "VOLTAGE")
+        self.SUPERsweepTabs.tabBar().setTabData(1,TestType.VOLTAGE_SWEEP)
         self.SUPERsweepTabs.addTab(self.tempControls_tb, "TEMPERATURE")
+        self.SUPERsweepTabs.tabBar().setTabData(2,TestType.TEMP_SWEEP)
         self.SUPERsweepTabs.addTab(self.freqControls_tb, "FREQUENCY")
+        self.SUPERsweepTabs.tabBar().setTabData(3,TestType.FREQUENCY_SWEEP)
         self.SUPERsweepTabs.addTab(self.phaseControls_tb, "PHASE")
+        self.SUPERsweepTabs.tabBar().setTabData(4,TestType.PHASE_SWEEP)
         self.SUPERsweepLayout.addWidget(self.SUPERsweepTabs)
         #--------------
         self.sweepControls_tb.setLayout(self.sweepControls)
@@ -2411,7 +2424,22 @@ class Window(QTabWidget):
     def _grab_qclTimeOffset(self):
         self.qcl_timerOffset = float(self.qcl_timeOffset.toPlainText())
         self.update_output_interface(f"Set QCL flash time offset to {self.qcl_timerOffset} s")
-    
+    #testType selector
+    @QtCore.pyqtSlot()
+    def _on_clicked_TestManager(self):
+        idx = self.SUPERsweepTabs.currentIndex()
+        test_type = self.SUPERsweepTabs.tabBar().tabData(idx)
+        if test_type == TestType.X_SWEEP:
+            threading.Thread(target = self.motor_sweep, daemon = True).start()
+        elif test_type == TestType.FREQUENCY_SWEEP:
+            threading.Thread(target = self._on_clicked_frequency_sweep, daemon = True).start()
+        elif test_type == TestType.TEMP_SWEEP:
+            threading.Thread(target = self._on_clicked_thermal_sweep, daemon = True).start()
+        elif test_type == TestType.VOLTAGE_SWEEP:
+            threading.Thread(target = self._on_clicked_voltage_sweep, daemon = True).start()
+        elif test_type == TestType.PHASE_SWEEP:
+            threading.Thread(target = self._on_clicked_phase_test, daemon = True).start()
+
     #signal generator blocking funcs---------------------------------------------------------------------------
     
     def _grab_frequency(self, channel):
