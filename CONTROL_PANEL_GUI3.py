@@ -343,7 +343,7 @@ class Window(QTabWidget):
         #peripherals connection
         self.periph_connect_button = QPushButton("CONNECT PERIPHERALS")
         self.periph_connect_button.setFont(QFont("Arial",10))
-        self.periph_connect_button.setFixedSize(300,80)
+        self.periph_connect_button.setFixedSize(300,50)
         self.periph_connect_button.setStyleSheet("background-color: red")
         self.periph_connect_button.clicked.connect(self.on_clicked_peripherals)
 
@@ -380,10 +380,15 @@ class Window(QTabWidget):
         self.motor_pos_button.setStyleSheet("background-color: white")
         self.motor_pos_button.clicked.connect(self.on_clicked_motor_move)
 
+
+        self.leftside_button_layout = QVBoxLayout()
+        self.leftside_button_layout.addWidget(self.periph_connect_button)
+        self.leftside_button_layout.addWidget(self.data_button)
+
         #packaging top row
-        top_row.addWidget(self.periph_connect_button, alignment = Qt.AlignLeft)
+        top_row.addLayout(self.leftside_button_layout)
         top_row.addLayout(self.peripheral_Status_SUPER)
-        top_row.addWidget(self.data_button, alignment = Qt.AlignLeft)
+        #top_row.addWidget(self.data_button, alignment = Qt.AlignLeft)
         top_row.addWidget(self.motor_home_button, alignment = Qt.AlignLeft)
         top_row.addWidget(self.motor_sweep_button, alignment = Qt.AlignLeft)
         top_row.addWidget(self.pos_text)#, alignment = Qt.AlignLeft)
@@ -1824,6 +1829,55 @@ class Window(QTabWidget):
             self.motorSweepCounter += 1
         self.K2220G.OUTPUT_OFF(channel = 2)
 
+    @QtCore.pyqtSlot()
+    def motor_sweep_with_temp(self):
+        #filestructure ----------- toplevel dir here ----------------------------------------
+        sweepfolder = f"{self.testID}\\SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
+        os.mkdir(sweepfolder)
+
+        self.K2220G.OUTPUT_ON()
+        self.K2220G.SET_VOLTAGE_CURRENT(2,12.12,1)
+        #added Functionality for temperature sweeping (need 50-70)
+        tempsToTest = np.linspace(50,70,11)
+
+        for tempToTest in tempsToTest:
+            #filestructure ------------- level 2 dir here--------------------------------------
+            tempfolder = f"{sweepfolder}\\TEMP_{tempToTest}"
+            os.mkdir(tempfolder)
+            self._native_waitForSettle(temp = tempToTest)
+            #normal motor stuff-------------------------------------------------------------------
+
+
+            move = float(self.stage_loBound)
+            #move = 5.
+            self.NRT100.movetodist(move)
+            
+            
+            self.motorSweepCounter = 0
+            self.update_output_interface(f"Sweep Started. Estimated Time Remaining = {self.frameCount/4 * (self.stage_hiBound-self.stage_loBound)/self.stage_dx}")
+
+
+            while move <= float(self.stage_hiBound): 
+                #movement phase-------------------------------------
+                self.NRT100.movetodist(move)
+                imagefolder = f"{sweepfolder}\\IMG_{move}"
+                os.mkdir(imagefolder)
+                #imaging phase--------------------------------------
+                self.microxcam.qcl_chop(f"{imagefolder}\\imageON.csv", f"{imagefolder}\\imageOFF.csv", int(self.frameCount))
+                time.sleep(2)
+                self.metaData_handler(path = imagefolder)
+                time.sleep(2)
+                #update phase----------------------------------------
+                move = move+self.stage_dx
+                time.sleep(1)
+                self.update_output_interface(f"MOVED TO: {move} mm")
+                time.sleep(1)
+                print(f"move: {move}")
+                self.motorSweepCounter += 1
+                #----------------------------------------------------
+
+            self.K2220G.OUTPUT_OFF(channel = 2)
+            #-------------------------------------------------------------------------------------------
 
     @QtCore.pyqtSlot()
     def on_clicked_file_explore(self):
