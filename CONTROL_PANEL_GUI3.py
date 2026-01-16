@@ -1757,7 +1757,7 @@ class Window(QTabWidget):
         self.update_output_interface(f"Sweep Started. Estimated Time Remaining = {self.frameCount/4 * (self.stage_hiBound-self.stage_loBound)/self.stage_dx}")
 
 
-        while move < float(self.stage_hiBound): 
+        while move <= float(self.stage_hiBound): 
             self.NRT100.movetodist(move)
             #camera stuff here
             imagefolder = f"{sweepfolder}\\IMG_{move}"
