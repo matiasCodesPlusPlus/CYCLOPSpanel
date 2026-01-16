@@ -1646,6 +1646,54 @@ class Window(QTabWidget):
 
 
     #Non-blocking (multithreading) functions
+    
+    def _native_waitForSettle(self, temp):
+        self.LS340_50K.set_setpoint(temp = temp)
+        self.LS340_50K.set_PID(p = 120, i = 30, d = 10)
+
+
+        averaging_time = 5
+        time_start = time.time()
+        temps = []
+        while time.time() - time_start < averaging_time:
+            
+            temps.append(float(self.current_T50K2))
+            time.sleep(0.1)
+        temp_avg = np.average(np.array(temps, dtype = float))
+        print("Current Temp = %.5f K" % temp_avg)
+        prev_temp_avg = 0.0
+        #check for settling, make sure it is settled within errors twice
+        settled_last_time = False
+        accurate_last_time = False
+        settling_accuracy = .1
+        while np.absolute(temp_avg - prev_temp_avg) > settling_accuracy or np.absolute(temp_avg - temp) > settling_accuracy or not settled_last_time or not accurate_last_time:
+            settling_accuracy = .0005*temp_avg
+            if np.absolute(temp_avg - prev_temp_avg) < settling_accuracy:
+                settled_last_time = True
+                print("Settled for last test period, waiting one more")
+            else:
+                settled_last_time = False
+                print("Not settled for last test period")
+            if np.absolute(temp_avg - temp) < settling_accuracy:
+                accurate_last_time = True
+                print("Temp at setpoint for last test period, waiting one more")
+            else:
+                accurate_last_time = False
+                print("Temp not at setpoint for last test period")
+            print("Waiting %.1f seconds for settling test" % 5)
+            time.sleep(5)
+            prev_temp_avg = temp_avg
+            #take data for another averaging period
+            time_start = time.time()
+            temps = []
+            while time.time() - time_start < averaging_time:
+                temps.append(float(self.current_T50K2))
+                time.sleep(.05)
+            temp_avg = np.average(np.array(temps, dtype = float))
+            print("Current Temp = %.5f K" % temp_avg)
+        pass
+
+
     @QtCore.pyqtSlot()
     def _simple_image(self):
         path = self.fileLocation.toPlainText()
@@ -1812,53 +1860,13 @@ class Window(QTabWidget):
         for tempToTest in tempstoTest:
             tempFolder = f"{sweepFolder}\\TEMP_{tempToTest}"
             os.mkdir(tempFolder)
-            self.LS340_50K.set_setpoint(temp = tempToTest)
-            self.LS340_50K.set_PID(p = 120, i = 30, d = 10)
 
-
-            averaging_time = 5
-            time_start = time.time()
-            temps = []
-            while time.time() - time_start < averaging_time:
-                
-                temps.append(float(self.current_T50K2))
-                time.sleep(0.1)
-            temp_avg = np.average(np.array(temps, dtype = float))
-            print("Current Temp = %.5f K" % temp_avg)
-            prev_temp_avg = 0.0
-            #check for settling, make sure it is settled within errors twice
-            settled_last_time = False
-            accurate_last_time = False
-            settling_accuracy = .1
-            while np.absolute(temp_avg - prev_temp_avg) > settling_accuracy or np.absolute(temp_avg - tempToTest) > settling_accuracy or not settled_last_time or not accurate_last_time:
-                settling_accuracy = .0005*temp_avg
-                if np.absolute(temp_avg - prev_temp_avg) < settling_accuracy:
-                    settled_last_time = True
-                    print("Settled for last test period, waiting one more")
-                else:
-                    settled_last_time = False
-                    print("Not settled for last test period")
-                if np.absolute(temp_avg - tempToTest) < settling_accuracy:
-                    accurate_last_time = True
-                    print("Temp at setpoint for last test period, waiting one more")
-                else:
-                    accurate_last_time = False
-                    print("Temp not at setpoint for last test period")
-                print("Waiting %.1f seconds for settling test" % 5)
-                time.sleep(5)
-                prev_temp_avg = temp_avg
-                #take data for another averaging period
-                time_start = time.time()
-                temps = []
-                while time.time() - time_start < averaging_time:
-                    temps.append(float(self.current_T50K2))
-                    time.sleep(.05)
-                temp_avg = np.average(np.array(temps, dtype = float))
-                print("Current Temp = %.5f K" % temp_avg)
+            self._native_waitForSettle(temp=tempToTest)
 
             self.update_output_interface(f"Temperature settled and accurate for two consecutive test periods")
             self.microxcam.qcl_chop(f"{tempFolder}\\imageON.csv", f"{tempFolder}\\imageOFF.csv", numFrames = int(self.frameCount))
             self.metaData_handler(path = tempFolder)
+            time.sleep(2)
         self.K2220G.OUTPUT_OFF(2)
         self.update_output_interface("THERMAL SWEEP COMPLETE!!")
         pass
