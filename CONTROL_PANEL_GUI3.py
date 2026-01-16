@@ -1838,9 +1838,10 @@ class Window(QTabWidget):
         self.K2220G.OUTPUT_ON()
         self.K2220G.SET_VOLTAGE_CURRENT(2,12.12,1)
         #added Functionality for temperature sweeping (need 50-70)
-        tempsToTest = np.linspace(50,70,11)
+        tempsToTest = np.linspace(50,75,14)
 
         for tempToTest in tempsToTest:
+            tempToTest = round(tempToTest,2)
             #filestructure ------------- level 2 dir here--------------------------------------
             tempfolder = f"{sweepfolder}\\TEMP_{tempToTest}"
             os.mkdir(tempfolder)
@@ -1854,13 +1855,15 @@ class Window(QTabWidget):
             
             
             self.motorSweepCounter = 0
-            self.update_output_interface(f"Sweep Started. Estimated Time Remaining = {self.frameCount/4 * (self.stage_hiBound-self.stage_loBound)/self.stage_dx}")
+            
 
 
             while move <= float(self.stage_hiBound): 
                 #movement phase-------------------------------------
+                time.sleep(2)
                 self.NRT100.movetodist(move)
-                imagefolder = f"{sweepfolder}\\IMG_{move}"
+                time.sleep(2)
+                imagefolder = f"{tempfolder}\\IMG_{move}"
                 os.mkdir(imagefolder)
                 #imaging phase--------------------------------------
                 self.microxcam.qcl_chop(f"{imagefolder}\\imageON.csv", f"{imagefolder}\\imageOFF.csv", int(self.frameCount))
@@ -1874,10 +1877,10 @@ class Window(QTabWidget):
                 time.sleep(1)
                 print(f"move: {move}")
                 self.motorSweepCounter += 1
-                #----------------------------------------------------
+        #power shutoff on test completion----------------------------------------------------
 
-            self.K2220G.OUTPUT_OFF(channel = 2)
-            #-------------------------------------------------------------------------------------------
+        self.K2220G.OUTPUT_OFF(channel = 2)
+        #-------------------------------------------------------------------------------------------
 
     @QtCore.pyqtSlot()
     def on_clicked_file_explore(self):
@@ -2305,12 +2308,15 @@ class Window(QTabWidget):
         #     #self.setpoint_line.setData((plot_times[len(plot_times)-plot_len:]-self.starttime)/60.0, plot_setpoint[len(plot_setpoint)-plot_len:])
         #     #self.power_line.setData((plot_times[len(plot_times)-plot_len:]-self.starttime)/60.0, plot_power[len(plot_power)-plot_len:])
         # else:
-        self.temp_line4K1.setData((plot_times[3:]-self.starttime)/60.0, plot_temps4K1[3:])
-        self.temp_line4K2.setData((plot_times[2:]-self.starttime)/60.0, plot_temps4K2[2:])
-        self.temp_line50K1.setData((plot_times[(len(plot_times)-len(plot_temps50K1)):]-self.starttime)/60.0, plot_temps50K1)
-        self.temp_line50K2.setData((plot_times[(len(plot_times)-len(plot_temps50K2)):]-self.starttime)/60.0, plot_temps50K2)            
-        self.setp_line4K.setData((plot_times[(len(plot_times)-len(plot_temps50K2)):]-self.starttime)/60.0, setp4)  
-        self.setp_line50K.setData((plot_times[(len(plot_times)-len(plot_temps50K2)):]-self.starttime)/60.0, setp50)   
+        try:
+            self.temp_line4K1.setData((plot_times[3:]-self.starttime)/60.0, plot_temps4K1[3:])
+            self.temp_line4K2.setData((plot_times[2:]-self.starttime)/60.0, plot_temps4K2[2:])
+            self.temp_line50K1.setData((plot_times[(len(plot_times)-len(plot_temps50K1)):]-self.starttime)/60.0, plot_temps50K1)
+            self.temp_line50K2.setData((plot_times[(len(plot_times)-len(plot_temps50K2)):]-self.starttime)/60.0, plot_temps50K2)            
+            self.setp_line4K.setData((plot_times[(len(plot_times)-len(plot_temps50K2)):]-self.starttime)/60.0, setp4)  
+            self.setp_line50K.setData((plot_times[(len(plot_times)-len(plot_temps50K2)):]-self.starttime)/60.0, setp50)   
+        except Exception:
+            print("plot update")
         #self.setpoint_line.setData((plot_times-self.starttime)/60.0, plot_setpoint)
         #self.power_line.setData((plot_times-self.starttime)/60.0, plot_power)
         number = self.current_chamberPressure
@@ -2428,7 +2434,7 @@ class Window(QTabWidget):
         idx = self.SUPERsweepTabs.currentIndex()
         test_type = self.SUPERsweepTabs.tabBar().tabData(idx)
         if test_type == TestType.X_SWEEP:
-            threading.Thread(target = self.motor_sweep, daemon = True).start()
+            threading.Thread(target = self.motor_sweep_with_temp, daemon = True).start()
         elif test_type == TestType.FREQUENCY_SWEEP:
             threading.Thread(target = self._on_clicked_frequency_sweep, daemon = True).start()
         elif test_type == TestType.TEMP_SWEEP:
