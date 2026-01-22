@@ -74,6 +74,20 @@ class K2220G:
         reslist = [t1, t2, t3, t4, t5, t6, t7]
         arr = np.array(reslist, dtype = int)
         result_queue.put(arr)
+    
+    def IVcurveTest(self, min_voltage, max_voltage, steps = 100):
+        data = []
+        volts = np.linspace(min_voltage, max_voltage, steps)
+        for volt in volts:
+            self.SET_VOLTAGE_CURRENT(2,volt,1)
+            time.sleep(1)
+            voltage = self.MEAS_VOLTAGE(2)
+            current = self.MEAS_CURRENT(2)
+            data.append([voltage, current])
+        data = np.array(data, dtype = float)
+        np.savetxt("IVcurveTest.csv", data, delimiter=",")
+        pass
+
 #class testing     
 if __name__ == "__main__":
     PSUP = K2220G()
