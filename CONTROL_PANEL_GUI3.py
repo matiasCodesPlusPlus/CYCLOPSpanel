@@ -1755,6 +1755,10 @@ class Window(QTabWidget):
         threading.Thread(target = self._on_clicked_thermal_sweep, daemon = True).start()
 
     @QtCore.pyqtSlot()
+    def on_clicked_limited_thermal_sweep(self):
+        threading.Thread(target = self._on_clicked_limited_thermal_sweep, daemon = True).start()
+
+    @QtCore.pyqtSlot()
     def on_clicked_voltage_sweep(self):
         threading.Thread(target = self._on_clicked_voltage_sweep, daemon = True).start()
 
@@ -1927,7 +1931,62 @@ class Window(QTabWidget):
         self.K2220G.OUTPUT_OFF(2)
         self.update_output_interface("THERMAL SWEEP COMPLETE!!")
         pass
-    
+
+    @QtCore.pyqtSlot()
+    def _on_clicked_limited_thermal_sweep(self):
+        self.K2220G.SET_VOLTAGE_CURRENT(2,12.12,1)
+        sweepFolder =  f"{self.testID}\\LIMITED_THERMAL_SWEEP_{dt.now().strftime("%Y_%m_%d_%H_%M_%S")}"
+        os.mkdir(sweepFolder)
+        FIRST_ORDER_EXPECTED = np.loadtxt("FIRST_ORDER_EXPECTED.csv", delimiter=",")
+        SECOND_ORDER_EXPECTED = np.loadtxt("SECOND_ORDER_EXPECTED.csv", delimiter=",")
+
+        #determine all temps
+        TEMPS = np.unique(np.concatenate((FIRST_ORDER_EXPECTED[:,0], SECOND_ORDER_EXPECTED[:,0])))
+        for temp in TEMPS:
+            tempFolder = f"{sweepFolder}\\TEMP_{temp}"
+            os.mkdir(tempFolder)
+            locsToVisit = []
+            if temp in FIRST_ORDER_EXPECTED[:,0]:
+                ind = np.where(FIRST_ORDER_EXPECTED[:,0]==temp)
+                pos_1 = FIRST_ORDER_EXPECTED[:,1][ind]
+                print(f"first order pos @{temp} K : {pos_1} mm")
+                locsToVisit.append(pos_1)
+            else:
+                print("first order not found here")
+
+            if temp in SECOND_ORDER_EXPECTED[:,0]:
+                ind = np.where(SECOND_ORDER_EXPECTED[:,0]==temp)
+                pos_2 = SECOND_ORDER_EXPECTED[:,1][ind]
+                print(f"second order pos @{temp} K : {pos_2} mm")
+                locsToVisit.append(pos_2)
+            else:
+                print("second order not found here")
+            locsToVisit = (np.array(locsToVisit))
+            for loc in locsToVisit:
+                locFolder = f"{tempFolder}\\LOC_{loc}"
+                os.mkdir(locFolder)
+                time.sleep(1)
+                self.NRT100.movetodist(loc)
+
+                microTemps = np.linspace(temp-2, temp+2, 5)
+                for microTemp in microTemps:
+                    if microTemp <50:
+                        continue
+                    microTempFolder = f"{locFolder}\\uTEMP_{microTemp}"
+                    os.mkdir(microTempFolder)
+                    self.LS340_50K.set_setpoint(temp = microTemp)
+                    self._native_waitForSettle(temp = microTemp)
+                    time.sleep(2)
+                    self.microxcam.qcl_chop(f"{microTempFolder}\\imageON.csv", f"{microTempFolder}\\imageOFF.csv", int(self.frameCount))
+                    print(f"took a fake image at T={microTemp} K, pos={loc} mm")
+                    time.sleep(2)
+                    self.metaData_handler(path = microTempFolder)
+                    time.sleep(1)
+        self.K2220G.OUTPUT_OFF(2)
+        self.update_output_interface("LIMITED THERMAL SWEEP COMPLETE!!")
+        pass
+
+
     @QtCore.pyqtSlot()
     def _on_clicked_voltage_sweep(self):
         self.update_output_interface(f"STARTING VOLTAGE SWEEP")
@@ -2438,7 +2497,7 @@ class Window(QTabWidget):
         elif test_type == TestType.FREQUENCY_SWEEP:
             threading.Thread(target = self._on_clicked_frequency_sweep, daemon = True).start()
         elif test_type == TestType.TEMP_SWEEP:
-            threading.Thread(target = self._on_clicked_thermal_sweep, daemon = True).start()
+            threading.Thread(target = self._on_clicked_limited_thermal_sweep, daemon = True).start()
         elif test_type == TestType.VOLTAGE_SWEEP:
             threading.Thread(target = self._on_clicked_voltage_sweep, daemon = True).start()
         elif test_type == TestType.PHASE_SWEEP:
