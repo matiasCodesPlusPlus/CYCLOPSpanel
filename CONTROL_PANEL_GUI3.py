@@ -1978,7 +1978,7 @@ class Window(QTabWidget):
                     self._native_waitForSettle(temp = microTemp)
                     time.sleep(2)
                     self.microxcam.qcl_chop(f"{microTempFolder}\\imageON.csv", f"{microTempFolder}\\imageOFF.csv", int(self.frameCount))
-                    print(f"took a fake image at T={microTemp} K, pos={loc} mm")
+                    print(f"took an image at T={microTemp} K, pos={loc} mm")
                     time.sleep(2)
                     self.metaData_handler(path = microTempFolder)
                     time.sleep(1)
