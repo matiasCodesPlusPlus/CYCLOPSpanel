@@ -85,17 +85,16 @@ class K2220G:
             current = self.MEAS_CURRENT(2)
             data.append([voltage, current])
         data = np.array(data, dtype = float)
-        np.savetxt("IVcurveTest.csv", data, delimiter=",")
+        np.savetxt(".\\IVcurveTest.csv", data, delimiter=",")
         pass
 
 #class testing     
 if __name__ == "__main__":
     PSUP = K2220G()
-    PSUP.SET_VOLTAGE_CURRENT(2,12.08,1)
+    PSUP.SET_VOLTAGE_CURRENT(2,12.12,1)
     PSUP.SET_VOLTAGE_CURRENT(1,0,0)
     PSUP.OUTPUT_ON()
     print(f"meas: {PSUP.MEAS_VOLTAGE(1)}")
-    
     
     
     

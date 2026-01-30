@@ -3,6 +3,27 @@ import numpy as np
 from os import path as path
 import time
 from scipy import interpolate
+import threading
+import queue
+
+class VisaLockedTransport:
+    def __init__(self, visa_resource):
+        self._inst = visa_resource
+        self._lock = threading.Lock()
+
+    def write(self, cmd: str):
+        with self._lock:
+            self._inst.write(cmd)
+
+    def read(self) -> str:
+        with self._lock:
+            return self._inst.read()
+
+    def query(self, cmd: str) -> str:
+        #atomic write + read
+        with self._lock:
+            self._inst.write(cmd)
+            return self._inst.read()
 class THERMOMETER():
     def __init__(self,channel, CRVlocation, opTemp = 50, location = '50K plate'):
         self.channel = channel
@@ -13,59 +34,65 @@ class THERMOMETER():
 class LS340:
     def __init__(self, GPIB_num):
         self.connectflag = 0
-        
+
         rm = pv.ResourceManager()
-        #print(f"resources: {rm.list_resources()}")
         try:
-            self.ctrl = rm.open_resource(f"GPIB0::{GPIB_num}::INSTR")
-            self.ctrl.write_termination = "[term]"
-            #print(f"ID: {self.ctrl.query("*IDN?")}")
-            self.ctrl.write("SYST:REM")
+            ctrl = rm.open_resource(f"GPIB0::{GPIB_num}::INSTR")
+
+            ctrl.write_termination = "\n"
+            ctrl.read_termination  = "\n"
+            ctrl.timeout = 2000  # ms
+
+            ctrl.write("SYST:REM")
+
+            # THIS is the important part
+            self.transport = VisaLockedTransport(ctrl)
+
             self.connectflag = 1
-        except pv.errors.VisaIOError:
+
+        except pv.errors.VisaIOError as e:
             self.connectflag = 0
-            print("failed")
+            raise RuntimeError("Failed to connect to Lake Shore 340") from e
         
-        pass
     def read_connectflag(self):
         return self.connectflag
     def readTemp(self,channel):
-        temp = self.ctrl.query('KRDG? ' + str(channel))
+        temp = self.transport.query('KRDG? ' + str(channel))
         return temp
     def readResistance(self,channel):
-        res = self.ctrl.query('SRDG? ' + str(channel))
+        res = self.transport.query('SRDG? ' + str(channel))
         return res
     def loadCurve(self,curveFile, userCurve):
         curveID = print(path.split(curveFile)[1].strip(".tbl"))
         data_array = np.loadtxt(curveFile,  skiprows=1)
         formString = "CRVHDR "+str(userCurve)+ ", "+"USER"+str(userCurve) + ", " +str(curveID)+ ", "+ "3, 400, 1"
-        self.ctrl.write(formString)
+        self.transport.write(formString)
         for index, vals in enumerate(data_array):
             comstr = "CRVPT "+str(userCurve)+", "+str(index+1) + ", "+str(round(vals[1],4))+", "+str(round(vals[0],4))+"[term]"
-            self.ctrl.write(comstr)
+            self.transport.write(comstr)
             print(comstr)
-        self.ctrl.write("CRVSAV")
+        self.transport.write("CRVSAV")
         
         pass
     def set_temp_limit(self, ch = 'A', temp = 0):
         #sets temperature limit for a given input, if exceeded, all outputs are turned off, temp given in K
-        self.ctrl.write("TLIMIT " + ch + ",%.3f")
+        self.transport.write("TLIMIT " + ch + ",%.3f")
         return self.query_temp_limit(ch = ch)
         
         
     def query_temp_limit(self, ch = 'A'):
         #queries current temp limit for a given channel
         if ch == 'A':
-            self.temp_limit_A = float(self.ctrl.query("TLIMIT? " + ch))
+            self.temp_limit_A = float(self.transport.query("TLIMIT? " + ch))
             return self.temp_limit_A
         elif ch == 'B':
-            self.temp_limit_B = float(self.ctrl.query("TLIMIT? " + ch))
+            self.temp_limit_B = float(self.transport.query("TLIMIT? " + ch))
             return self.temp_limit_B
         elif ch == 'C':
-            self.temp_limit_C = float(self.ctrl.query("TLIMIT? " + ch))
+            self.temp_limit_C = float(self.transport.query("TLIMIT? " + ch))
             return self.temp_limit_C
         elif ch == 'D':
-            self.temp_limit_D = float(self.ctrl.query("TLIMIT? " + ch))
+            self.temp_limit_D = float(self.transport.query("TLIMIT? " + ch))
             return self.temp_limit_D
         else:
             print(ch + " is not a known channel")
@@ -73,16 +100,16 @@ class LS340:
             
     def set_setpoint(self, output=1, temp = 0.0):
         #sets the control setpoint for a given output channel, 2 is the low power output
-        self.ctrl.write("SETP " + str(output)+ ", " + str(temp))
+        self.transport.write("SETP " + str(output)+ ", " + str(temp))
         return self.query_setpoint(output = output)
         
     def query_setpoint(self, output = 2):
         #queries the output temperature set point
         if output == 1:
-            self.output1_setp = float(self.ctrl.query("SETP? 1"))
+            self.output1_setp = float(self.transport.query("SETP? 1"))
             return self.output1_setp
         if output == 2:
-            self.output2_setp = float(self.ctrl.query("SETP? 2"))
+            self.output2_setp = float(self.transport.query("SETP? 2"))
             return self.output2_setp
         else:
             print("Output %d not recognized" % output)
@@ -91,7 +118,7 @@ class LS340:
     def set_heater_range(self, output = 2, range = 0):
         #sets the output heater range, 0 is off, 1-5 are increasing ranges in decades of power output
         if range < 5:
-            self.ctrl.write("RANGE %d,%d" %(int(round(output)),int(round(range))))
+            self.transport.write("RANGE %d,%d" %(int(round(output)),int(round(range))))
         else:
             print("Range %d cannot be greater than 5" % range)
         return self.query_heater_range(output = output)
@@ -99,10 +126,10 @@ class LS340:
     def query_heater_range(self, output = 2):
         #queries the current heater range setting
         if output == 1:
-            self.output1_range = int(self.ctrl.query("RANGE? 1"))
+            self.output1_range = int(self.transport.query("RANGE? 1"))
             return self.output1_range
         if output == 2:
-            self.output2_range = int(self.ctrl.query("RANGE? 2"))
+            self.output2_range = int(self.transport.query("RANGE? 2"))
             return self.output2_range
         else:
             print("Output %d not recognized" % output)
@@ -138,16 +165,16 @@ class LS340:
         else:
             print("Channel " + input_ch + " not recognized")
             input = 1
-        self.ctrl.write("OUTMODE %d,%d,%d,%d" %(output, mode_num, input, power_up_enable))
+        self.transport.write("OUTMODE %d,%d,%d,%d" %(output, mode_num, input, power_up_enable))
         return self.query_output_mode(output = output)
         
     def query_output_mode(self, output = 2):
         #queries the current output mode
         if output == 1:
-            self.output1_mode = self.ctrl.query("OUTMODE? 1")
+            self.output1_mode = self.transport.query("OUTMODE? 1")
             return self.output1_mode
         if output == 2:
-            self.output2_mode = self.ctrl.query("OUTMODE? 2")
+            self.output2_mode = self.transport.query("OUTMODE? 2")
             return self.output2_mode
         else:
             print("Output %d not recognized" % output)
@@ -155,34 +182,26 @@ class LS340:
             
     def set_PID(self, output = 1, p = 50, i = 20, d = 50):
         #sets the pid control parameters for an output = p*(error + i*(integral of error + d/100*derivative of error))
-        self.ctrl.write("PID %d,%.1f,%.1f,%d" % (output, p, i, d))
+        self.transport.write("PID %d,%.1f,%.1f,%d" % (output, p, i, d))
         return self.query_PID(output = output)
         
     def query_PID(self, output):
-        return self.ctrl.query("PID? "+ str(output))
+        return self.transport.query("PID? "+ str(output))
         #queries the current pid parameters for an output
-        # if output == "A":
-        #     self.output1_pid = self.ctrl.query("PID? A")
-        #     return self.output1_pid
-        # if output == "B":
-        #     self.output2_pid = self.ctrl.query("PID? B")
-        #     return self.output2_pid
-        # else:
-        #     print("Output %d not recognized" % output)
-        #     retur
+        
             
     def set_manual_out(self, output = 2, man_out = 0):
         #sets the manual output value for a given output in % of max power
-        self.ctrl.write("MOUT %d, %.3f" %(output, man_out))
+        self.transport.write("MOUT %d, %.3f" %(output, man_out))
         return self.query_manual_out(output = output)
         
     def query_manual_out(self, output = 2):
         #queries the current manual output level for a given output
         if output == 1:
-            self.output1_mout = self.ctrl.query("MOUT? 1")
+            self.output1_mout = self.transport.query("MOUT? 1")
             return self.output1_mout
         if output == 2:
-            self.output2_mout = self.ctrl.query("MOUT? 2")
+            self.output2_mout = self.transport.query("MOUT? 2")
             return self.output2_mout
         else:
             print("Output %d not recognized" % output)
@@ -191,10 +210,10 @@ class LS340:
     def query_htr_out(self, output = 1):
         #queries the current heater output in % of max
         if output == 1:
-            self.output1_output = float(self.ctrl.query("HTR? 1"))
+            self.output1_output = float(self.transport.query("HTR? 1"))
             return self.output1_output
         if output == 2:
-            self.output2_output = float(self.ctrl.query("HTR? 2"))
+            self.output2_output = float(self.transport.query("HTR? 2"))
             return self.output2_output
         else:
             print("Output %d not recognized" % output)
@@ -403,16 +422,16 @@ class LS340:
         return 1
     def configureControl(self, loop = 1, mode = 4):
         """sets up control loop in variety of modes, default is mode 1 on Autotune PID"""
-        self.ctrl.write("CMODE "+str(loop)+", "+str(mode))
+        self.transport.write("CMODE "+str(loop)+", "+str(mode))
     def queryControl(self, loop = 1):
-        self.ctrl.query("CMODE? "+str(loop))
+        self.transport.query("CMODE? "+str(loop))
     def controlDisplay(self, loop = 1, numloops = 1, resistance = 144, currPow = 2, largeOutput = 0):
-        self.ctrl.write("CDISP "+str(loop)+", "+str(numloops)+", "+str(resistance)+", "+str(currPow)+", "+str(largeOutput))
+        self.transport.write("CDISP "+str(loop)+", "+str(numloops)+", "+str(resistance)+", "+str(currPow)+", "+str(largeOutput))
     def controlRamp(self, loop = 1, onOff = 1, kpmin = 5):
-        self.ctrl.write("RAMP "+ str(loop)+", "+str(onOff)+", "+str(kpmin))
+        self.transport.write("RAMP "+ str(loop)+", "+str(onOff)+", "+str(kpmin))
     def htrRange(self, range):
         """input a range from 0-5 0 = heater OFF"""
-        self.ctrl.write("RANGE "+str(range))
+        self.transport.write("RANGE "+str(range))
 if __name__ == "__main__":
     Mout = np.linspace(100,60,9)
     

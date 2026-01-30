@@ -178,10 +178,24 @@ class MICROXCAM:
 
 if __name__ == "__main__":
     cam = MICROXCAM()
-    num = 4.75
-    dir = f".\\FOCUS\\SCREWpos_{num}"
-    os.mkdir(dir)
-    cam.qcl_chop(f"{dir}\\SHORT_EXP_ON.csv",f"{dir}\\SHORT_EXP_OFF.csv",500) 
+    starting_dist = 42.5
+     #mm
+    dz = 2.5 #mm
+    end_dist = starting_dist + dz*3
+    dists_far = np.linspace(starting_dist,end_dist,4)
+    for dist in dists_far:
+
+        input("press enter to once adjustment is done")
+        dir = f".\\FOCUS_HiDef2\\STAGEpos_{dist}mm"
+        os.mkdir(dir)
+        cam.qcl_chop(f"{dir}\\LONG_EXP_ON.csv",f"{dir}\\LONG_EXP_OFF.csv",5000)
+
+
+
+    # dir = f".\\FOCUS_HiDef\\STAGEpos_{num}"
+    # os.mkdir(dir)
+
+    # cam.qcl_chop(f"{dir}\\SHORT_EXP_ON.csv",f"{dir}\\SHORT_EXP_OFF.csv",500) 
     
 
     

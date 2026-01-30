@@ -1942,6 +1942,7 @@ class Window(QTabWidget):
 
         #determine all temps
         TEMPS = np.unique(np.concatenate((FIRST_ORDER_EXPECTED[:,0], SECOND_ORDER_EXPECTED[:,0])))
+        print(TEMPS)
         for temp in TEMPS:
             tempFolder = f"{sweepFolder}\\TEMP_{temp}"
             os.mkdir(tempFolder)
@@ -1968,14 +1969,14 @@ class Window(QTabWidget):
                 time.sleep(1)
                 self.NRT100.movetodist(loc)
 
-                microTemps = np.linspace(temp-2, temp+2, 5)
+                microTemps = np.linspace(temp-2.0, temp+2.0, 5)
                 for microTemp in microTemps:
                     if microTemp <50:
                         continue
                     microTempFolder = f"{locFolder}\\uTEMP_{microTemp}"
                     os.mkdir(microTempFolder)
-                    self.LS340_50K.set_setpoint(temp = microTemp)
-                    self._native_waitForSettle(temp = microTemp)
+                    self.LS340_50K.set_setpoint(temp = round(microTemp,2))
+                    self._native_waitForSettle(temp = round(microTemp,2))
                     time.sleep(2)
                     self.microxcam.qcl_chop(f"{microTempFolder}\\imageON.csv", f"{microTempFolder}\\imageOFF.csv", int(self.frameCount))
                     print(f"took an image at T={microTemp} K, pos={loc} mm")
