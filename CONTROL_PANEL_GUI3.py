@@ -1842,7 +1842,7 @@ class Window(QTabWidget):
         self.K2220G.OUTPUT_ON()
         self.K2220G.SET_VOLTAGE_CURRENT(2,12.12,1)
         #added Functionality for temperature sweeping (need 50-70)
-        tempsToTest = np.linspace(50,75,14)
+        tempsToTest = np.array([50,73.08,75])
 
         for tempToTest in tempsToTest:
             tempToTest = round(tempToTest,2)
@@ -2555,7 +2555,7 @@ class Window(QTabWidget):
             self.heatstate = False
 
     def QCLsafetyCheck(self):
-        if (float(self.current_T50K1) > 75) or (float(self.current_T50K2) > 75):
+        if (float(self.current_T50K1) > 95) or (float(self.current_T50K2) > 95):
             self.K2220G.OUTPUT_OFF(2) #turns off qcl in event of temperature raise due to compressor shutoff, power loss etc.
             self.K2220G.OUTPUT_OFF(1) #turn off output 1 for good measure
             self.update_output_interface("QCL ERROR 0001: Temperature too high!")
