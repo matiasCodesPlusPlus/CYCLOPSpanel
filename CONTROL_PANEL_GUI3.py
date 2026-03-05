@@ -1842,8 +1842,8 @@ class Window(QTabWidget):
         self.K2220G.OUTPUT_ON()
         self.K2220G.SET_VOLTAGE_CURRENT(2,12.12,1)
         #added Functionality for temperature sweeping (need 50-70)
-        tempsToTest = np.array([50,73.08,75])
-
+        #tempsToTest = np.linspace(54.84,75,30)
+        tempsToTest = np.array([53.44,54.14,65.96,70.13,74.3])
         for tempToTest in tempsToTest:
             tempToTest = round(tempToTest,2)
             #filestructure ------------- level 2 dir here--------------------------------------
@@ -2308,6 +2308,7 @@ class Window(QTabWidget):
         """Timer rise/fall function to update sensor data"""
         cur_time = time.time()
         self.times.append(float(cur_time))  # Remove the first y element.
+        self.grab_motor_position()
         #self.x.append(self.x[-1] + 1)  # Add a new value 1 higher than the last.
 
         try: #READING TEMPS FROM 4 SENSORS
